@@ -1,34 +1,55 @@
-# صَدَى — Transcription API
+# صَدَى — API
 
-The static frontend calls `https://sada-ai-api.onrender.com/api/transcribe`.
+الواجهة الأمامية تتصل بالخادم عبر:
+- `POST /api/transcribe` — تفريغ الصوت وإرجاع توقيتات الكلمات.
+- `POST /api/split-scenes` — تقسيم النص المعتمد إلى مشاهد دلالية.
+- `GET /health` — فحص الخدمة.
 
-## Render Web Service settings
+## إنشاء خدمة API على Render
 
-- Repository: `hyyan55/sada-ai-studio`
+أنشئ **Web Service منفصلة** للمستودع `hyyan55/sada-ai-studio`، ولا تغيّر إعدادات Static Site الحالية.
+
+- Name: `sada-ai-api`
 - Branch: `main`
 - Runtime: Node
-- Build command: `npm install`
-- Start command: `npm start`
-- Health check path: `/health`
+- Build Command: `npm install`
+- Start Command: `npm start`
+- Health Check Path: `/health`
 
-Create a separate **Web Service** for this repository. Keep the existing Static Site unchanged.
+سيكون عنوان الخدمة المتوقع:
+`https://sada-ai-api.onrender.com`
 
-## Render Environment variables
+## مفاتيح API
 
-Add these in the Web Service's Environment tab:
+أنشئ المفاتيح من حساباتك فقط، ثم أضفها في Render → خدمة `sada-ai-api` → Environment:
 
-- `GEMINI_API_KEY` — Google AI Studio API key.
-- `GROQ_API_KEY` — Groq API key.
-- `ALLOWED_ORIGINS` — optional comma-separated frontend origins. Set the exact public Sada frontend origin(s) after deployment. `*` is the default until configured.
-- `GROQ_MODEL` — optional; defaults to `whisper-large-v3-turbo`.
+- Google AI Studio: [إنشاء Gemini API key](https://aistudio.google.com/app/apikey) → اسم المتغير `GEMINI_API_KEY`
+- Groq: [إنشاء Groq API key](https://console.groq.com/keys) → اسم المتغير `GROQ_API_KEY`
 
-Do not put either API key in `index.html`, frontend environment variables, or GitHub.
+وأضف أيضاً:
 
-## Behaviour
+- `ALLOWED_ORIGINS` — رابط موقع صَدَى الأمامي كاملاً، مثل `https://your-site.example`، دون / في النهاية. إذا كان لديك أكثر من نطاق، افصل بينها بفاصلة.
+- `GROQ_MODEL` — اختياري؛ القيمة الافتراضية `whisper-large-v3-turbo`.
 
-1. Gemini 3.5 Transcribe is attempted first, with word timestamps.
-2. If Gemini fails or the inline-audio limit is exceeded, Groq Whisper is attempted automatically.
-3. The API returns a provider-neutral transcript and word timing structure.
-4. The endpoint is rate-limited and accepts audio up to 24 MB and 30 minutes.
+**لا ترسل المفاتيح في المحادثة، ولا تضعها في GitHub أو ملفات الواجهة.** هذا المستودع لا يحتوي على مفاتيح فعلية.
 
-The frontend expects the Render service name `sada-ai-api`. If you choose a different service name in Render, update `SADA_API_URL` in `index.html` to that service's URL.
+## سير العمل
+
+1. يرفع المستخدم الصوت بعد التحقق من قابلية تشغيله.
+2. يحاول الخادم التفريغ عبر Gemini 3.5 Transcribe أولاً، مع توقيت الكلمات، ثم Groq Whisper تلقائياً عند فشل Gemini.
+3. تعود الكلمات مع بداياتها ونهاياتها الزمنية.
+4. يراجع المستخدم النص ويصححه.
+5. عند ضغط «اعتماد النص وتقسيمه إلى مشاهد»، يحاول الخادم استخدام Gemini Flash لتقسيمه دلالياً دون حذف الكلمات أو إعادة صياغتها. إذا تعذّر التحليل، يستخدم تقسيمًا محلياً احتياطياً.
+6. يراجع المستخدم المشاهد وتوقيتها قبل التصميم والتصدير.
+
+## الحدود والخصوصية
+
+- حجم الملف الأقصى: 24MB.
+- مدة الملف القصوى في الواجهة: 30 دقيقة.
+- Gemini 3.5 Transcribe مع توقيت الكلمات: حتى 15 دقيقة؛ التسجيلات الأطول تنتقل مباشرة إلى Groq.
+- Groq Whisper يدعم توقيت الكلمات عبر `verbose_json`.
+- الملفات التي ترفع إلى Gemini تُحذف من Files API بعد انتهاء الطلب، مع محاولة حذفها حتى عند الفشل.
+- الطلبات محدودة بمعدل 12 طلباً لكل 15 دقيقة لكل عنوان IP.
+- لا يبدأ CORS بالسماح لأي نطاق افتراضياً؛ يجب ضبط `ALLOWED_ORIGINS` في Render قبل استخدام الواجهة.
+
+ملاحظة: توفر الخطة المجانية وحدودها يتغيران بحسب حساب المزوّد. توضح Google أن بيانات الاستخدام المجاني قد تُستخدم لتحسين منتجاتها؛ لا ترفع ملفات حساسة دون مراجعة شروط المزود.
