@@ -446,6 +446,7 @@ body[data-stage="video"] #panel-export .field{margin-top:0}
           <div class="field"><label>حجم الخط: <span class="val" id="fontVal"></span></label><input type="range" id="fontSize" min="24" max="120" step="1"></div>
           <div class="field"><label>موضع النص أفقياً: <span class="val" id="txVal"></span></label><input type="range" id="textX" min="5" max="95" step="1"></div>
           <div class="field"><label>موضع النص رأسياً: <span class="val" id="tyVal"></span></label><input type="range" id="textY" min="8" max="92" step="1"></div>
+          <p class="hint">يمكنك أيضاً سحب النص بإصبعك مباشرة داخل معاينة الفيديو لتحديد مكانه.</p>
           <div class="field"><label>خلفية النص</label><select id="captionBg"><option value="none">بدون خلفية</option><option value="rect">مستطيلة</option><option value="rounded">مستطيل بحواف دائرية</option><option value="pill">كبسولة</option></select></div>
           <div class="field"><label>لون خلفية النص</label><input type="color" id="captionBgColor" style="width:100%;height:44px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:4px"></div>
           <div class="field"><label>شفافية الخلفية: <span class="val" id="bgOpacityVal"></span></label><input type="range" id="captionBgOpacity" min="0" max="100" step="1"></div>
@@ -1327,7 +1328,7 @@ function drawCaptions(x,W,H,sc,t,st,alpha,idx){
     try{x.filter="none"}catch(e){}
     x.fillStyle=st.accent||"#7545D6";
     var lw=maxW*0.18*easeOut(enterP)*(1-exitP);
-    if(lw>1)x.fillRect(W/2-lw/2,posY+(nLines/2)*base*lineH+base*0.34,lw,Math.max(2,u*3.2));
+    if(lw>1)x.fillRect(posX-lw/2,posY+(nLines/2)*base*lineH+base*0.34,lw,Math.max(2,u*3.2));
   }else{
     var wordsData;
     if(hasWords){wordsData=sc.words}
