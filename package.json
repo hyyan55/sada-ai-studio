@@ -1,5 +1,5 @@
 {
-  "name": "sada-ai-transcription-api",
+  "name": "sada-ai-studio",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -10,9 +10,9 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "cors": "^2.8.5",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
     "multer": "^2.0.2"
-  }
+  },
+  "description": "صَدَى — AI Reels Studio and transcription API"
 }
