@@ -243,6 +243,21 @@ progress{width:100%;height:16px;accent-color:var(--purple)}
   .preview-box canvas{width:min(100%,300px)}
 }
 
+ .layer-tools{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.layer-list{display:grid;gap:10px;margin-top:12px}
+.layer-card{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
+.layer-card-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-weight:800;color:var(--purple-d)}
+.layer-card-head .sp{flex:1}
+.layer-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.layer-fields label{font-size:12px;font-weight:700;color:var(--gray)}
+.layer-fields input{width:100%;min-width:0;border:1px solid var(--line);border-radius:8px;padding:6px}
+.layer-fields textarea{grid-column:1/-1;width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit}
+.layer-tracks{display:grid;gap:7px;margin-top:14px}
+.layer-track{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;align-items:center}
+.layer-track b{font-size:12px;color:var(--gray);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.layer-track-rail{height:22px;background:var(--soft);border-radius:6px;position:relative;overflow:hidden}
+.layer-track-bar{position:absolute;top:2px;bottom:2px;border-radius:4px;background:var(--purple-l);min-width:3px}
+@media(max-width:600px){.layer-track{grid-template-columns:70px minmax(0,1fr)}}
 </style>
 </head>
 <body>
@@ -406,11 +421,22 @@ progress{width:100%;height:16px;accent-color:var(--purple)}
           <p class="hint">المؤثرات الصوتية داخل الفيديو اختيارية لكل مشهد: اخترها من بطاقة المشهد (ووش، بوب، نقرة، مسح، وقع، أجواء) مع مستواها وتأخيرها، وعاينها قبل الإضافة من زر ♪ — وتُدمج في ملف MP4 النهائي متزامنة مع ظهور النص. بدون اختيار أي مؤثر يبقى الفيديو بصوتك الأصلي فقط. كل المؤثرات مولّدة برمجياً داخل متصفحك لحظة الاستخدام، بلا ملفات خارجية أو مواد محمية.</p>
         </div>
 
+        <div class="panel" id="panel-layers">
+          <h2><span class="st">4</span>المونتاج متعدد المسارات</h2>
+          <p class="hint">أضف صوراً ونصوصاً ومقاطع صوتية فوق التسجيل الأصلي، واضبط توقيت كل طبقة لتظهر في المعاينة والتصدير.</p>
+          <div class="layer-tools">
+            <label class="btn btn-o btn-s">＋ إضافة صور<input id="layerImages" type="file" accept="image/*" multiple hidden></label>
+            <label class="btn btn-o btn-s">♫ إضافة صوت<input id="layerAudios" type="file" accept="audio/*" multiple hidden></label>
+            <button class="btn btn-g btn-s" id="addTextLayer" type="button">T إضافة نص</button>
+          </div>
+          <div id="layerList" class="layer-list"><div class="empty">لا توجد طبقات إضافية بعد.</div></div>
+          <div id="layerTracks" class="layer-tracks"></div>
+        </div>
         <div class="panel" id="panel-export">
-          <h2><span class="st">4</span>التصدير</h2>
+          <h2><span class="st">5</span>التصدير</h2>
           <p class="hint" id="exportSupport"></p>
           <div class="field"><label>جودة التصدير</label>
-            <select id="exportQ"><option value="1080" selected>1080 × 1920 — الجودة الكاملة للنشر (الافتراضي)</option><option value="720">720 × 1280 — أسرع وأخف على الهواتف الضعيفة</option></select></div>
+            <select id="exportQ"><option value="1080" selected>1080 × 1920 — Full HD</option><option value="720">720 × 1280 — HD</option><option value="1440">1440 × 2560 — 2K</option><option value="2160">2160 × 3840 — 4K</option></select></div>
           <button class="btn btn-p" id="exportBtn" style="width:100%">تصدير الفيديو MP4 الآن</button>
           <div class="msg" id="exportMsg"></div>
           <div id="exportProg" class="hidden" style="margin-top:12px">
@@ -485,7 +511,8 @@ var S={
   scenes:[], /* {text,start,end,words} */
   transcriptWords:[],
   settings:{template:"geo",capMode:"smart",accent:"#7545D6",fontSize:64,textPos:"center",account:"",speed:1,density:26,showWave:true,lineHeight:1.55,textWidth:88,textHeight:42,fontWeight:800,enterDur:0.14,exitDur:0.15,uiSound:true,uiVol:0.5,sfxVol:0.6},
-  playing:false
+  playing:false,
+  layers:[], layerBuffers:{}, layerUrls:{}
 };
 var audioEl=$("#audioEl");
 var actx=null, audioBuf=null;
@@ -506,7 +533,7 @@ function idbTx(mode,fn){return idb().then(function(db){return new Promise(functi
 function saveProject(silent){
   var rec={id:S.projectId||uid(),name:$("#projName").value||"مشروع بدون عنوان",updatedAt:Date.now(),
     settings:JSON.parse(JSON.stringify(S.settings)),scenes:S.scenes,transcript:$("#transcript").value,
-    transcriptWords:S.transcriptWords,audioBlob:S.audioBlob,audioName:S.audioName,duration:S.duration};
+    transcriptWords:S.transcriptWords,audioBlob:S.audioBlob,audioName:S.audioName,duration:S.duration,layers:S.layers};
   S.projectId=rec.id;
   return idbTx("readwrite",function(st){st.put(rec)}).then(function(){
     $("#saveState").textContent="حُفظ "+new Date().toLocaleTimeString("ar");
@@ -538,9 +565,10 @@ function refreshProjects(){
   });
 }
 function openProject(p){
-  S.projectId=p.id;S.scenes=p.scenes||[];S.transcriptWords=p.transcriptWords||[];S.settings=Object.assign({},S.settings,p.settings||{});
+  S.projectId=p.id;S.scenes=p.scenes||[];S.transcriptWords=p.transcriptWords||[];S.settings=Object.assign({},S.settings,p.settings||{});S.layers=p.layers||[];restoreLayerAssets();
   S.duration=p.duration||0;$("#projName").value=p.name;$("#transcript").value=p.transcript||"";
   if(p.audioBlob){setAudioBlob(p.audioBlob,p.audioName||"audio",true)}else{clearAudioUI()}
+  renderLayers();
   syncSettingsUI();renderScenes();buildTimeline();showStudio();drawPreview();
   $("#saveState").textContent="فُتح المشروع";
 }
@@ -560,7 +588,7 @@ $("#navNew").addEventListener("click",function(){newProject("geo")});
 $("#heroStart").addEventListener("click",function(){newProject("geo")});
 $("#saveBtn").addEventListener("click",function(){saveProject(false)});
 $("#exportProjBtn").addEventListener("click",function(){
-  var data={name:$("#projName").value,settings:S.settings,scenes:S.scenes,transcript:$("#transcript").value,transcriptWords:S.transcriptWords,audioName:S.audioName,duration:S.duration};
+  var data={name:$("#projName").value,settings:S.settings,scenes:S.scenes,transcript:$("#transcript").value,transcriptWords:S.transcriptWords,audioName:S.audioName,duration:S.duration,layers:S.layers.map(function(l){var c=Object.assign({},l);delete c.blob;return c})};
   var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));
   a.download="sada-project.json";a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},4000);
 });
@@ -1297,10 +1325,56 @@ function drawFrame(x,W,H,t,st,scenes,peaks,dur){
 }
 
 /* ============ Preview ============ */
+/* Multi-track media layers */
+function revokeLayerUrls(){Object.keys(S.layerUrls||{}).forEach(function(k){try{URL.revokeObjectURL(S.layerUrls[k])}catch(e){}});S.layerUrls={};S.layerBuffers={};}
+function restoreLayerAssets(){
+  revokeLayerUrls();
+  (S.layers||[]).forEach(function(l){if(!l.blob)return;var u=URL.createObjectURL(l.blob);S.layerUrls[l.id]=u;
+    if(l.type==="image"){var im=new Image();im.onload=drawPreview;im.src=u;S.layerBuffers[l.id]=im}
+    if(l.type==="audio"){var AC=window.AudioContext||window.webkitAudioContext;if(AC){if(!actx)actx=new AC();l.blob.arrayBuffer().then(function(ab){return actx.decodeAudioData(ab.slice(0))}).then(function(buf){S.layerBuffers[l.id]=buf}).catch(function(){})}}
+  });renderLayers();
+}
+function drawLayerFrames(ctx,W,H,t){
+  (S.layers||[]).forEach(function(l){if(t<l.start||t>l.end)return;
+    if(l.type==="image"){var im=S.layerBuffers[l.id];if(!im||!im.complete||!im.naturalWidth)return;
+      var limW=W*.84*(l.scale||.72),limH=H*.62*(l.scale||.72),r=Math.min(limW/im.naturalWidth,limH/im.naturalHeight),iw=im.naturalWidth*r,ih=im.naturalHeight*r;
+      ctx.save();ctx.shadowColor="rgba(0,0,0,.3)";ctx.shadowBlur=W*.018;ctx.drawImage(im,W*(l.x||.5)-iw/2,H*(l.y||.5)-ih/2,iw,ih);ctx.restore();
+    }else if(l.type==="text"){var fs=Math.max(24,W*.065*(l.scale||1));ctx.save();ctx.textAlign="center";ctx.textBaseline="middle";ctx.font="900 "+fs+"px Cairo";ctx.lineWidth=Math.max(3,W*.008);ctx.strokeStyle="rgba(0,0,0,.6)";ctx.fillStyle=l.color||"#fff";
+      var lines=String(l.text||"").split("\n").slice(0,4),yy=H*(l.y||.78);lines.forEach(function(line,i){var y=yy+(i-(lines.length-1)/2)*fs*1.25;ctx.strokeText(line,W*(l.x||.5),y);ctx.fillText(line,W*(l.x||.5),y)});ctx.restore();}
+  });
+}
+function renderLayers(){
+  var box=$("#layerList");if(!box)return;box.innerHTML="";
+  if(!S.layers.length){box.innerHTML='<div class="empty">لا توجد طبقات إضافية بعد.</div>';buildLayerTracks();return;}
+  S.layers.forEach(function(l,i){var d=document.createElement("div");d.className="layer-card";var h=document.createElement("div");h.className="layer-card-head";
+    var name=document.createElement("span");name.textContent=(l.type==="image"?"▧ صورة":l.type==="audio"?"♫ صوت":"T نص")+" — "+l.name;
+    var sp=document.createElement("span");sp.className="sp";var del=document.createElement("button");del.className="iconbtn";del.textContent="✕";
+    del.onclick=function(){S.layers.splice(i,1);if(S.layerUrls[l.id])URL.revokeObjectURL(S.layerUrls[l.id]);delete S.layerUrls[l.id];delete S.layerBuffers[l.id];renderLayers();drawPreview();saveProject(true)};
+    h.append(name,sp,del);d.appendChild(h);var fields=document.createElement("div");fields.className="layer-fields";
+    function num(label,key,step,min,max){var lab=document.createElement("label");lab.textContent=label;var inp=document.createElement("input");inp.type="number";inp.step=step;inp.min=min;inp.max=max;inp.value=l[key];inp.onchange=function(){var v=Number(inp.value);if(Number.isFinite(v)){l[key]=v;buildLayerTracks();drawPreview();saveProject(true)}};lab.appendChild(inp);fields.appendChild(lab)}
+    num("بداية (ث)","start",".05",0,S.duration||3600);num("نهاية (ث)","end",".05",0,S.duration||3600);
+    if(l.type==="audio")num("مستوى الصوت","volume",".05",0,2);
+    if(l.type==="image"){num("الموضع الأفقي","x",".05",0,1);num("الموضع الرأسي","y",".05",0,1);num("الحجم","scale",".05",.1,1.5)}
+    if(l.type==="text"){var ta=document.createElement("textarea");ta.rows=2;ta.value=l.text||"";ta.oninput=function(){l.text=ta.value;drawPreview();saveProject(true)};fields.appendChild(ta);num("الموضع الأفقي","x",".05",0,1);num("الموضع الرأسي","y",".05",0,1)}
+    d.appendChild(fields);box.appendChild(d);
+  });buildLayerTracks();
+}
+function buildLayerTracks(){var box=$("#layerTracks");if(!box)return;box.innerHTML="";if(!S.duration)return;
+  S.layers.forEach(function(l){var row=document.createElement("div");row.className="layer-track";var b=document.createElement("b");b.textContent=(l.type==="image"?"صورة":l.type==="audio"?"صوت":"نص")+" · "+l.name;
+    var rail=document.createElement("div");rail.className="layer-track-rail";var bar=document.createElement("div");bar.className="layer-track-bar";bar.style.insetInlineStart=(Math.max(0,l.start)/S.duration*100)+"%";bar.style.width=(Math.max(.5,(l.end-l.start)/S.duration*100))+"%";rail.appendChild(bar);row.append(b,rail);box.appendChild(row)});
+}
+function addLayerFile(file,type){var id=uid(),l={id:id,type:type,name:file.name||type,blob:file,start:0,end:S.duration||5,volume:.8,x:.5,y:.5,scale:.72,text:""};S.layers.push(l);var u=URL.createObjectURL(file);S.layerUrls[id]=u;
+  if(type==="image"){var im=new Image();im.onload=drawPreview;im.src=u;S.layerBuffers[id]=im}
+  if(type==="audio"){var AC=window.AudioContext||window.webkitAudioContext;if(AC){if(!actx)actx=new AC();file.arrayBuffer().then(function(ab){return actx.decodeAudioData(ab.slice(0))}).then(function(buf){S.layerBuffers[id]=buf;showToast("تم تجهيز الصوت الإضافي")}).catch(function(){showToast("تعذّر قراءة ملف الصوت","err")})}}
+  renderLayers();drawPreview();saveProject(true);
+}
+$("#layerImages").addEventListener("change",function(){Array.from(this.files||[]).forEach(function(f){if(f.type.startsWith("image/"))addLayerFile(f,"image")});this.value=""});
+$("#layerAudios").addEventListener("change",function(){Array.from(this.files||[]).forEach(function(f){if(f.type.startsWith("audio/"))addLayerFile(f,"audio")});this.value=""});
+$("#addTextLayer").addEventListener("click",function(){var t=prompt("اكتب النص الذي تريد إضافته إلى الفيديو:");if(t&&t.trim()){S.layers.push({id:uid(),type:"text",name:"نص إضافي",text:t.trim(),start:audioEl.currentTime||0,end:S.duration||5,x:.5,y:.78,scale:1,color:"#fff"});renderLayers();drawPreview();saveProject(true)}});
 var pv=$("#preview"),pvx=pv.getContext("2d");
 function drawPreview(){
   var t=S.audioUrl?audioEl.currentTime:0;
-  drawFrame(pvx,pv.width,pv.height,t,S.settings,S.scenes,S.peaks,S.duration);
+  drawFrame(pvx,pv.width,pv.height,t,S.settings,S.scenes,S.peaks,S.duration);drawLayerFrames(pvx,pv.width,pv.height,t);
   $("#pvTime").textContent=fmtT(t)+(S.duration?" / "+fmtT(S.duration):"");
   var head=$("#tlHead");if(S.duration)head.style.insetInlineStart=(t/S.duration*100)+"%";
   $$("#tlTrack .seg").forEach(function(el,i){el.classList.toggle("cur",i===sceneAt(t))});
@@ -1497,7 +1571,7 @@ function startExport(){
   _startExport();
 }
 async function _startExport(){
-  var q=+$("#exportQ").value,W=q===1080?1080:720,H=q===1080?1920:1280;
+  var q=+$("#exportQ").value,W=q,H=Math.round(q*16/9);
   var cv=document.createElement("canvas");cv.width=W;cv.height=H;var x=cv.getContext("2d");
   var scale=W/540;var st=Object.assign({},S.settings);st.fontSize=Math.round(S.settings.fontSize*scale);
   var AC=window.AudioContext||window.webkitAudioContext;
@@ -1505,6 +1579,10 @@ async function _startExport(){
   var dest=ac.createMediaStreamDestination();
   var src=ac.createBufferSource();src.buffer=audioBuf;
   var gain=ac.createGain();gain.gain.value=1;src.connect(gain);gain.connect(dest);gain.connect(ac.destination);
+  S.layers.filter(function(l){return l.type==="audio"&&S.layerBuffers[l.id]}).forEach(function(l){
+    var ex=ac.createBufferSource(),eg=ac.createGain();ex.buffer=S.layerBuffers[l.id];eg.gain.value=Math.max(0,Math.min(2,l.volume==null?0.8:l.volume));ex.connect(eg);eg.connect(dest);
+    var startAt=Math.max(0,l.start||0),offset=Math.max(0,l.offset||0),playFor=Math.min(Math.max(0,ex.buffer.duration-offset),Math.max(0,(l.end||dur)-startAt));if(playFor>0)ex.start(t0+startAt,offset,playFor);
+  });
   /* مؤثرات المشاهد: تُصيَّر محلياً وتُجدول عند بداية كل مشهد (+ تأخيره) داخل
      نفس رسم الصوت، فتصل إلى ملف MP4 النهائي متزامنة مع ظهور النص تماماً. */
   var sfxBufs={},needTypes={};
@@ -1532,7 +1610,7 @@ async function _startExport(){
   });
   function draw(){
     var el=ac.currentTime-t0;
-    drawFrame(x,W,H,Math.min(el,dur),st,S.scenes,S.peaks,dur);
+    drawFrame(x,W,H,Math.min(el,dur),st,S.scenes,S.peaks,dur);drawLayerFrames(x,W,H,Math.min(el,dur));
     var pct=Math.min(100,Math.round(el/dur*100));
     $("#progBar").value=pct;$("#progText").textContent="المرحلة 1 — تصيير المشاهد والصوت: "+pct+"% ("+fmtT(el)+" / "+fmtT(dur)+")"+(mime.indexOf("mp4")>=0?" — تسجيل MP4 مباشر":" — يليها تحويل FFmpeg إلى MP4");
     if(el<dur&&!stopped){raf=requestAnimationFrame(draw)}
