@@ -8,7 +8,7 @@
 <title>صَدَى | SADA AI Reels Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Changa:wght@400;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;600;700;800&family=Changa:wght@400;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --white:#FFFFFF; --purple:#7545D6; --purple-l:#B99AFF; --purple-d:#39216D;
@@ -554,7 +554,7 @@ var S={
   peaks:[],speechSegs:[],
   scenes:[], /* {text,start,end,words} */
   transcriptWords:[],
-  settings:{template:"editorial",capMode:"phrase",theme:"green",accent:"#E8FFE9",fontSize:64,fontFamily:"template",textPos:"center",textX:50,textY:50,captionBg:"none",captionBgColor:"#241a3f",captionBgOpacity:78,account:"",speed:1,density:26,showWave:true,lineHeight:1.55,textWidth:88,textHeight:42,fontWeight:800,enterDur:0.14,exitDur:0.15,uiSound:true,uiVol:0.5,sfxVol:0.6},
+  settings:{template:"editorial",capMode:"phrase",theme:"green",accent:"#E8FFE9",fontSize:64,fontFamily:"template",textPos:"center",textX:.5,textY:.5,captionBg:"none",captionBgColor:"#241a3f",captionBgOpacity:78,account:"",speed:1,density:26,showWave:true,lineHeight:1.55,textWidth:88,textHeight:42,fontWeight:800,enterDur:0.14,exitDur:0.15,uiSound:true,uiVol:0.5,sfxVol:0.6},
   playing:false,
   layers:[], layerBuffers:{}, layerUrls:{}
 };
@@ -1159,7 +1159,6 @@ function syncSettingsUI(){
   $("#captionBgColor").addEventListener("change",function(){saveProject(true)});
   $("#captionBgOpacity").addEventListener("input",function(){S.settings.captionBgOpacity=+this.value;$("#bgOpacityVal").textContent=this.value+"%";drawPreview()});
   $("#captionBgOpacity").addEventListener("change",function(){saveProject(true)});
-  $("#fontSize").addEventListener("input",function(){S.settings.fontSize=+this.value;$("#fontVal").textContent=this.value;drawPreview()});
   $("#textWidth").addEventListener("input",function(){S.settings.textWidth=+this.value;$("#twVal").textContent=this.value+"%";drawPreview()});
   $("#textHeight").addEventListener("input",function(){S.settings.textHeight=+this.value;$("#thVal").textContent=this.value+"%";drawPreview()});
   $("#lineHeight").addEventListener("input",function(){S.settings.lineHeight=+this.value;$("#lhVal").textContent=this.value;drawPreview()});
