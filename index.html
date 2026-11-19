@@ -350,24 +350,17 @@ progress{width:100%;height:16px;accent-color:var(--purple)}
 
         <div class="panel" id="panel-text">
           <h2><span class="st">2</span>النص والمشاهد</h2>
-          <p class="hint">الطريقة الأساسية: فعّل Whisper بالأسفل فيفرّغ كلامك العربي محلياً ويستخرج توقيت كل كلمة ويبني المشاهد تلقائياً. وإن تعذّر على جهازك، البدائل اليدوية تحتها تعمل دائماً: لصق النص، الإملاء، أو استيراد SRT — ويوزّع صَدَى النص اليدوي على توقيتات مستخرجة من طاقة صوتك ومواضع صمته الفعلية.</p>
+          <p class="hint">ارفع صوتك ثم اضغط التفريغ التلقائي. يعمل صَدَى على خادم آمن: Gemini أولاً، ثم Groq تلقائياً عند تعذّر Gemini. لا تحتاج إلى حساب أو مفتاح API.</p>
           <div class="whisper-box">
-            <label for="whisperModel">التفريغ التلقائي — Whisper يعمل محلياً في متصفحك</label>
+            <label>التفريغ التلقائي الذكي</label>
             <div class="whisper-row">
-              <select id="whisperModel">
-                <option value="Xenova/whisper-base" selected>Whisper Base — متوازن ودقيق للعربية (تنزيل أول مرة نحو 145MB)</option>
-                <option value="Xenova/whisper-small">Whisper Small — الأعلى دقة للعربية واللهجة السودانية (نحو 245MB، أبطأ)</option>
-                <option value="Xenova/whisper-tiny">Whisper Tiny — الأخف والأسرع، دقة أقل (نحو 40MB)</option>
-              </select>
-              <button class="btn btn-o btn-s" id="libBtn" type="button">تنزيل المكتبة والنموذج</button>
-              <button class="btn btn-p btn-s" id="whisperBtn" type="button">استخراج النص والتوقيت من الصوت (Whisper)</button>
+              <button class="btn btn-p btn-s" id="whisperBtn" type="button">استخراج النص والتوقيت من الصوت</button>
             </div>
-            <div class="lib-status" id="libStatus"><span class="dot"></span>حالة المكتبة: غير محمّلة بعد — التنزيل يحدث مرة واحدة ويُحفظ في متصفحك.</div>
             <div id="whisperProg" class="hidden" style="margin-top:10px">
               <progress id="whisperBar" value="0" max="100"></progress>
               <div class="whisper-status" id="whisperStatus"></div>
             </div>
-            <p class="whisper-note">يُفرَّغ الكلام العربي مع توقيت بداية ونهاية كل كلمة، ثم يُقسَّم إلى مقاطع مناسبة للعرض. اللهجة السودانية تُكتب عربيةً وقد تحتاج تصحيح بعض الكلمات من بطاقات المشاهد. النموذج يُنزَّل مرة واحدة ويُخزَّن في متصفحك، وملفك الصوتي لا يغادر جهازك. لا يوجد تفريغ آلي دقيق بنسبة 100% — راجع النص دائماً وصحّحه، ويمكنك إعادة تفريغ أي مقطع وحده من زر ↻ في بطاقته دون التأثير على بقية المقاطع. للملفات الطويلة يُقسَّم الصوت داخلياً إلى مقاطع متداخلة ويُدمج النص دون تكرار.</p>
+            <p class="whisper-note">يُرسل الملف الصوتي إلى خادم صَدَى لمعالجته عبر Gemini، مع الانتقال تلقائياً إلى Groq عند الفشل. لا تُعرض مفاتيح الخدمات للمستخدم. يدعم التفريغ توقيت الكلمات، وقد تحتاج اللهجة السودانية إلى مراجعة وتصحيح يدوي. الحد الأقصى للملف 24MB والمدة 30 دقيقة.</p>
           </div>
           <textarea class="ta" id="transcript" rows="5" placeholder="سيظهر هنا النص المفرَّغ من صوتك — أو الصق هنا نص ما قلته، جملة في كل سطر أو مفصولاً بعلامات الترقيم…"></textarea>
           <div class="btnrow">
@@ -459,18 +452,6 @@ progress{width:100%;height:16px;accent-color:var(--purple)}
   </div>
 </div>
 
-<div id="libOverlay" role="alertdialog" aria-live="polite" aria-label="تنزيل المكتبة">
-  <div class="lib-card">
-    <div class="lib-spinner" id="libSpinner"></div>
-    <div class="lib-check" id="libCheck">✓</div>
-    <h3 id="libTitle">انتظر، جارٍ تنزيل المكتبة...</h3>
-    <p id="libSub">يحدث هذا مرة واحدة فقط، ثم تعمل المكتبة من جهازك مباشرة.</p>
-    <progress id="libBar" value="0" max="100"></progress>
-    <div style="font-weight:900;color:var(--purple-d);margin-top:6px" id="libPct">0%</div>
-    <button class="btn btn-p hidden" id="libRetry" type="button" style="margin-top:14px">إعادة المحاولة</button>
-    <button class="btn btn-g hidden" id="libClose" type="button" style="margin-top:10px">إغلاق</button>
-  </div>
-</div>
 <div id="toast" role="status"></div>
 
 <script>
@@ -584,7 +565,7 @@ $("#exportProjBtn").addEventListener("click",function(){
 });
 
 /* ============ Audio handling ============ */
-var MAXMB=50;
+var MAXMB=24;
 function clearAudioUI(){
   if(S.audioUrl){URL.revokeObjectURL(S.audioUrl);S.audioUrl=null}
   audioEl.removeAttribute("src");S.peaks=[];S.speechSegs=[];
@@ -760,261 +741,52 @@ $("#importText").addEventListener("change",function(){
   });
 });
 
-/* ============ Whisper transcription — local, lazy-loaded on demand ============ */
-var whisperPipe=null,whisperModelLoaded="",transformersPromise=null;
-/* مكتبة Transformers.js تُنشر كوحدة ES Module فقط (ملفها ينتهي بـ export{...})،
-   فتحميلها بوسم <script> عادي يفشل دائماً ولا يُنشئ أي كائن عام — وهذا كان سبب
-   خطأ «مكتبة التفريغ لم تُحمَّل بشكل صحيح» على كل الأجهزة. الحل: استيرادها
-   كوحدة عند الطلب عبر import() الديناميكي، مع بدائل CDN ومهلة لكل محاولة. */
-var TRANSFORMERS_URLS=[
-  "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/transformers.min.js",
-  "https://unpkg.com/@xenova/transformers@2.17.2/dist/transformers.min.js",
-  "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/+esm"
-];
-function importWithTimeout(url,ms){
-  return Promise.race([
-    import(/* webpackIgnore: true */ url),
-    new Promise(function(_,rej){setTimeout(function(){rej(new Error("انتهت مهلة تحميل المكتبة من "+url))},ms)})
-  ]);
-}
-function loadTransformers(){
-  if(window.Transformers&&window.Transformers.pipeline)return Promise.resolve(window.Transformers);
-  if(transformersPromise)return transformersPromise;
-  var chain=Promise.reject(new Error("start"));
-  TRANSFORMERS_URLS.forEach(function(url){
-    chain=chain.catch(function(){return importWithTimeout(url,90000)});
-  });
-  transformersPromise=chain.then(function(mod){
-    var T=mod&&(mod.pipeline?mod:(mod.default&&mod.default.pipeline?mod.default:null));
-    if(!T||!T.pipeline)throw new Error("وصلت مكتبة التفريغ دون واجهة التفريغ (pipeline)");
-    window.Transformers=T;
-    /* ضبط البيئة لتعمل داخل إطار مضمّن غير معزول المصدر (لا SharedArrayBuffer):
-       خيط WASM واحد، ومسارات ملفات WASM من CDN نفسه، ونماذج من Hugging Face فقط. */
-    try{
-      T.env.allowLocalModels=false;
-      T.env.useBrowserCache=true;
-      if(T.env.backends&&T.env.backends.onnx&&T.env.backends.onnx.wasm){
-        T.env.backends.onnx.wasm.numThreads=1;
-        T.env.backends.onnx.wasm.wasmPaths="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/";
-      }
-    }catch(e){}
-    return T;
-  }).catch(function(err){
-    transformersPromise=null; /* اسمح بإعادة المحاولة من الصفر عند الضغط مجدداً */
-    throw new Error("تعذّرت تهيئة مكتبة التفريغ من جميع المصادر — تحقق من اتصال الإنترنت ثم أعد المحاولة. ("+((err&&err.message)||err)+")");
-  });
-  return transformersPromise;
-}
-function resample16k(buf){
-  return new Promise(function(res,rej){
-    try{
-      var off=new OfflineAudioContext(1,Math.max(1,Math.ceil(buf.duration*16000)),16000);
-      var src=off.createBufferSource();src.buffer=buf;src.connect(off.destination);src.start();
-      off.startRendering().then(function(r){res(r.getChannelData(0))}).catch(rej);
-    }catch(e){rej(e)}
-  });
-}
-function findQuietBoundary(target,min,max){
-  if(!audioBuf||!audioBuf.length||max<=min)return target;
-  var data=audioBuf.getChannelData(0),sr=audioBuf.sampleRate;
-  var frame=Math.max(1,Math.floor(sr*0.02)),lo=Math.max(0,Math.floor(min*sr)),hi=Math.min(data.length,Math.ceil(max*sr));
-  var from=Math.max(lo,Math.floor((target-0.14)*sr)),to=Math.min(hi,Math.ceil((target+0.14)*sr));
-  var best=target,bestEnergy=Infinity;
-  for(var p=from;p<to;p+=frame){
-    var end=Math.min(to,p+frame),sum=0,n=end-p;
-    if(n<=0)continue;
-    for(var j=p;j<end;j+=4){var v=data[j];sum+=v*v}
-    var energy=sum/Math.max(1,Math.ceil(n/4));
-    if(energy<bestEnergy){bestEnergy=energy;best=p/sr}
-  }
-  return Math.max(min,Math.min(max,best));
-}
-function scenesFromChunks(chunks){
-  /* كلمة منفردة بتوقيت Whisper تُحفظ كما هي. أما العبارة متعددة الكلمات
-     فتُقسَّم تقديرياً بأوزان الحروف، ثم تُحسَّن الحدود قرب انخفاضات طاقة الصوت. */
-  var scenes=[],cur=null;
-  function flush(){if(cur&&cur.text.trim()){cur.text=cur.text.trim();scenes.push(cur)}cur=null}
-  function pushWord(w,s,e,estimated){
-    if(!cur)cur={text:"",start:s,end:e,words:[]};
-    if(!cur.words)cur.words=[];
-    cur.words.push({w:w,s:Math.round(s*100)/100,e:Math.round(Math.max(e,s+0.05)*100)/100,estimated:!!estimated});
-    cur.text=(cur.text?cur.text+" ":"")+w;cur.end=e;
-  }
-  (chunks||[]).forEach(function(ch){
-    var txt=(ch.text||"").trim();if(!txt)return;
-    var ts=ch.timestamp||[0,0];
-    var s=(typeof ts[0]==="number")?ts[0]:0;
-    var e=(typeof ts[1]==="number"&&ts[1]>s)?ts[1]:s+Math.max(0.3,txt.length*0.045);
-    var parts=txt.split(/\s+/).filter(Boolean);
-    if(cur){
-      var gap=s-cur.end,wc=cur.text.split(/\s+/).length;
-      if(gap>0.7||wc>=8||(e-cur.start)>6.5||/[.!؟?]$/.test(cur.text))flush();
-    }
-    if(parts.length===1){pushWord(parts[0],s,e,false);return}
-    var weights=parts.map(function(w){return Math.max(1,Array.from(w.replace(/[ًٌٍَُِّْـ]/g,"")).length)});
-    var total=weights.reduce(function(a,v){return a+v},0)||1;
-    var targets=[],acc=s;
-    for(var i=0;i<parts.length-1;i++){acc+=(e-s)*(weights[i]/total);targets.push(acc)}
-    var bounds=[s];
-    for(var b=0;b<targets.length;b++){
-      var remaining=parts.length-b-1;
-      var minB=bounds[b]+Math.min(0.07,(e-s)/(parts.length*2));
-      var maxB=e-remaining*Math.min(0.07,(e-s)/(parts.length*2));
-      var adjusted=findQuietBoundary(targets[b],minB,maxB);
-      bounds.push(Math.max(bounds[b]+0.04,Math.min(maxB,adjusted)));
-    }
-    bounds.push(e);
-    parts.forEach(function(w,i){pushWord(w,bounds[i],bounds[i+1],true)});
-  });
-  flush();
-  scenes.forEach(function(sc){
-    sc.start=Math.round(sc.start*100)/100;
-    sc.end=Math.round(Math.max(sc.end,sc.start+0.4)*100)/100;
-  });
-  return scenes;
-}
+/* ============ Server transcription: Gemini primary, Groq fallback ============ */
+var SADA_API_URL="https://sada-ai-api.onrender.com";
 async function transcribeWhisper(){
   var btn=$("#whisperBtn"),prog=$("#whisperProg"),bar=$("#whisperBar"),status=$("#whisperStatus");
-  if(!S.audioBlob||!audioBuf){msg($("#textMsg"),"warn","ارفع ملفاً صوتياً صالحاً أولاً (الخطوة 1)، ثم جرّب التفريغ.");return}
+  if(!S.audioBlob||!audioBuf){msg($("#textMsg"),"warn","ارفع ملفاً صوتياً صالحاً أولاً، ثم جرّب التفريغ.");return}
+  if(S.duration>1800){msg($("#textMsg"),"warn","مدة الملف تتجاوز 30 دقيقة. قصّ التسجيل إلى أجزاء أقصر ثم أعد المحاولة.");return}
   btn.disabled=true;btn.textContent="جارٍ التفريغ…";
-  prog.classList.remove("hidden");bar.value=0;status.textContent="تحضير مكتبة التفريغ المحلية…";
+  prog.classList.remove("hidden");bar.removeAttribute("value");
+  status.textContent="جارٍ إرسال الصوت إلى خادم صَدَى…";
   hideMsg($("#textMsg"));
-  var stage="تحميل مكتبة التفريغ";
+  var controller=new AbortController(),timeout=setTimeout(function(){controller.abort()},360000);
   try{
-    if(typeof WebAssembly==="undefined")throw new Error("متصفحك لا يدعم WebAssembly اللازم لتشغيل Whisper محلياً — حدّث المتصفح أو استخدم البدائل اليدوية بالأسفل");
-    showLibOverlay();
-    var T=await loadTransformers();
-    var model=$("#whisperModel").value;
-    if(!whisperPipe||whisperModelLoaded!==model){
-      stage="تنزيل نموذج Whisper";
-      status.textContent="جارٍ تنزيل نموذج Whisper — أول مرة فقط، وسيُحفظ في متصفحك للمرات القادمة…";
-      var dlHappened=false;
-      var onProg=function(ev){
-        if(ev&&ev.status==="progress"&&ev.total){dlHappened=true;var p=Math.round(ev.loaded/ev.total*100);bar.value=p;setLibProgress(p);status.textContent="تنزيل النموذج: "+p+"%"}
-        else if(ev&&(ev.status==="initiate"||ev.status==="download")){dlHappened=true}
-        else if(ev&&ev.status==="ready"){bar.value=100;setLibProgress(100);status.textContent="النموذج جاهز."}
-      };
-      try{
-        whisperPipe=await T.pipeline("automatic-speech-recognition",model,{quantized:true,progress_callback:onProg});
-      }catch(cacheErr){
-        /* قد تفشل ذاكرة المتصفح المؤقتة داخل بعض المتصفحات المضمّنة — أعد المحاولة دونها */
-        try{T.env.useBrowserCache=false}catch(e){}
-        whisperPipe=null;
-        status.textContent="تعثّر التخزين المؤقت للنموذج — إعادة التنزيل مباشرة دون تخزين…";
-        whisperPipe=await T.pipeline("automatic-speech-recognition",model,{quantized:true,progress_callback:onProg});
-      }
-      whisperModelLoaded=model;
-      setLibReady();if(dlHappened)libOverlaySuccess();else hideLibOverlay();
-    }
-    if(!dlHappened)hideLibOverlay(); /* النموذج كان جاهزاً من قبل — لا تُبقِ شاشة التنزيل */
-    stage="تفريغ الكلام من الصوت";
-    status.textContent="جارٍ تحويل الصوت إلى تردد 16kHz…";
-    var audio16=await resample16k(audioBuf);
-    status.textContent="جارٍ تفريغ الكلام العربي واستخراج توقيت كل كلمة… قد يستغرق ذلك بعض الوقت على الهواتف.";
-    bar.removeAttribute("value");
-    var result=await whisperPipe(audio16,{language:"arabic",task:"transcribe",return_timestamps:"word",chunk_length_s:30,stride_length_s:5});
-    var text=(result&&result.text?result.text:"").trim();
-    if(!text)throw new Error("لم يُستخرج أي كلام من الملف");
+    var form=new FormData();
+    var mime=S.audioBlob.type||"audio/mpeg";
+    var filename=S.audioName||"sada-audio";
+    form.append("audio",S.audioBlob,filename);
+    form.append("duration",String(S.duration||0));
+    status.textContent="المحرك الأول: Gemini — استخراج النص وتوقيت الكلمات…";
+    var response=await fetch(SADA_API_URL.replace(/\/$/,"")+"/api/transcribe",{method:"POST",body:form,signal:controller.signal});
+    var data={};try{data=await response.json()}catch(e){}
+    if(!response.ok)throw new Error(data.error||"تعذّر التفريغ على الخادم.");
+    var text=(data.text||"").trim();
+    if(!text)throw new Error("لم يُستخرج كلام واضح من التسجيل.");
     $("#transcript").value=text;
-    var built=scenesFromChunks(result.chunks);
+    var chunks=Array.isArray(data.chunks)?data.chunks:[];
+    var built=scenesFromChunks(chunks);
     if(built.length){
       S.scenes=built;renderScenes();buildTimeline();drawPreview();
-      playUi("success");
-      var exactCount=built.reduce(function(n,sc){return n+sc.words.filter(function(w){return !w.estimated}).length},0);var estimatedCount=built.reduce(function(n,sc){return n+sc.words.filter(function(w){return w.estimated}).length},0);msg($("#textMsg"),"ok","اكتمل التفريغ المحلي بـ Whisper وبُني "+built.length+" مشهداً. توقيتات كلمات منفردة من النموذج: "+exactCount+"، وتوقيتات مقدّرة محسّنة صوتياً: "+estimatedCount+". راجع النص والتوقيتات؛ قد يخطئ النموذج في اللهجة السودانية، ويمكنك تعديل بداية ونهاية كل كلمة.");
+      var exactCount=built.reduce(function(n,sc){return n+sc.words.filter(function(w){return !w.estimated}).length},0);
+      var estimatedCount=built.reduce(function(n,sc){return n+sc.words.filter(function(w){return w.estimated}).length},0);
+      msg($("#textMsg"),"ok","اكتمل التفريغ عبر "+(data.provider==="gemini"?"Gemini":"Groq (البديل التلقائي)")+" وبُني "+built.length+" مشهداً. توقيتات الكلمات: "+exactCount+" دقيقة من النموذج، و"+estimatedCount+" مقدّرة ومحسّنة صوتياً. راجع النص والتوقيتات قبل التصدير.");
     }else{
-      msg($("#textMsg"),"ok","اكتمل التفريغ واستُخرج النص، لكن هذه الجلسة لم تُرجع توقيتات كلمات. اضغط «تقسيم النص إلى مشاهد موقوتة» لتوزيعه على مقاطع كلام صوتك الحقيقية.");
+      msg($("#textMsg"),"warn","اكتمل استخراج النص عبر "+(data.provider==="gemini"?"Gemini":"Groq")+", لكن الخدمة لم تُرجع توقيتات كلمات لهذا الملف. استخدم «تقسيم النص إلى مشاهد موقوتة» لبناء توقيتات تقديرية من الصوت.");
     }
     status.textContent="اكتمل التفريغ بنجاح.";
-  }catch(err){
-    whisperPipe=null;whisperModelLoaded=""; /* إعادة ضبط نظيفة حتى تنجح إعادة المحاولة */
-    status.textContent="توقف التفريغ في مرحلة: "+stage+".";
-    var dlStage=(stage==="تحميل مكتبة التفريغ"||stage==="تنزيل نموذج Whisper");
-    if(dlStage&&$("#libOverlay").classList.contains("show")){
-      libOverlayError(function(){transcribeWhisper()});
-      msg($("#textMsg"),"err","تعذّر تنزيل مكتبة التفريغ على هذا الجهاز. تحقق من اتصال الإنترنت ومن مساحة التخزين ثم أعد المحاولة. البدائل بالأسفل — لصق النص، الإملاء، أو استيراد SRT — تعمل دائماً.");
-    }else{
-      hideLibOverlay();
-      msg($("#textMsg"),"err","تعذّر التفريغ التلقائي في مرحلة «"+stage+"» ("+((err&&err.message)||"خطأ غير معروف")+"). أعد المحاولة بالزر نفسه — وإن تكرر الفشل أثناء تنزيل النموذج فتحقق من الإنترنت، وإن كان النموذج Base فجرّب Tiny الأخف على ذاكرة الجهاز. البدائل بالأسفل — لصق النص، الإملاء، أو استيراد SRT — تعمل دائماً.");
-    }
-    playUi("error");
-  }
-  btn.disabled=false;btn.textContent="استخراج النص والتوقيت من الصوت (Whisper)";
-}
-$("#whisperBtn").addEventListener("click",function(){transcribeWhisper()});
-
-/* ============ Toast + clean library-download overlay ============ */
-var toastTimer=null;
-function showToast(text,kind){
-  var t=$("#toast");if(!t)return;
-  t.textContent=text;t.className=kind==="err"?"show err":"show";
-  clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.className=""},3400);
-}
-var libRetryFn=null;
-function showLibOverlay(){
-  var o=$("#libOverlay");o.classList.add("show");
-  $("#libSpinner").style.display="block";$("#libCheck").style.display="none";
-  $("#libTitle").textContent="انتظر، جارٍ تنزيل المكتبة...";
-  $("#libSub").textContent="يحدث هذا مرة واحدة فقط، ثم تعمل المكتبة من جهازك مباشرة.";
-  $("#libBar").style.display="block";$("#libPct").style.display="block";
-  $("#libBar").value=0;$("#libPct").textContent="0%";
-  $("#libRetry").classList.add("hidden");$("#libClose").classList.add("hidden");
-}
-function setLibProgress(p){p=Math.max(0,Math.min(100,Math.round(p)));$("#libBar").value=p;$("#libPct").textContent=p+"%"}
-function hideLibOverlay(){$("#libOverlay").classList.remove("show")}
-function libOverlaySuccess(){
-  $("#libSpinner").style.display="none";$("#libCheck").style.display="flex";
-  $("#libTitle").textContent="اكتمل تنزيل المكتبة بنجاح";
-  $("#libSub").textContent="المكتبة جاهزة الآن على جهازك.";
-  setLibProgress(100);setTimeout(hideLibOverlay,1500);
-}
-function libOverlayError(retryFn){
-  libRetryFn=retryFn||null;
-  $("#libSpinner").style.display="none";$("#libCheck").style.display="none";
-  $("#libTitle").textContent="تعذّر إكمال التنزيل";
-  $("#libSub").textContent="حدثت مشكلة أثناء التنزيل — تحقق من اتصال الإنترنت ومن مساحة التخزين على جهازك، ثم حاول مجدداً.";
-  $("#libBar").style.display="none";$("#libPct").style.display="none";
-  $("#libRetry").classList.remove("hidden");$("#libClose").classList.remove("hidden");
-}
-$("#libRetry").addEventListener("click",function(){hideLibOverlay();if(libRetryFn)libRetryFn()});
-$("#libClose").addEventListener("click",function(){hideLibOverlay()});
-function setLibReady(){
-  var el=$("#libStatus");el.classList.add("ready");
-  el.innerHTML='<span class="dot"></span>حالة المكتبة: جاهزة — النموذج محفوظ في متصفحك ويعمل دون اتصال بعد أول تنزيل.';
-}
-/* تنزيل المكتبة والنموذج وحدهما (دون تفريغ) — بواجهة التنزيل النظيفة */
-async function downloadLibrary(){
-  var btn=$("#libBtn");btn.disabled=true;
-  showLibOverlay();
-  try{
-    if(typeof WebAssembly==="undefined")throw new Error("no-wasm");
-    var T=await loadTransformers();
-    var model=$("#whisperModel").value;
-    var downloaded=false;
-    if(!whisperPipe||whisperModelLoaded!==model){
-      var onProg=function(ev){
-        if(ev&&ev.status==="progress"&&ev.total){downloaded=true;setLibProgress(ev.loaded/ev.total*100)}
-        else if(ev&&(ev.status==="initiate"||ev.status==="download"))downloaded=true;
-        else if(ev&&ev.status==="ready")setLibProgress(100);
-      };
-      try{
-        whisperPipe=await T.pipeline("automatic-speech-recognition",model,{quantized:true,progress_callback:onProg});
-      }catch(cacheErr){
-        try{T.env.useBrowserCache=false}catch(e){}
-        whisperPipe=null;
-        whisperPipe=await T.pipeline("automatic-speech-recognition",model,{quantized:true,progress_callback:onProg});
-      }
-      whisperModelLoaded=model;
-    }
-    setLibReady();
-    if(downloaded)libOverlaySuccess();else hideLibOverlay();
-    showToast("المكتبة جاهزة — يمكنك الآن استخراج النص والتوقيت من الصوت");
     playUi("success");
   }catch(err){
-    libOverlayError(function(){downloadLibrary()});
+    var reason=err&&err.name==="AbortError"?"انتهت مهلة المعالجة. جرّب ملفاً أقصر أو أعد المحاولة.":((err&&err.message)||"تعذّر الاتصال بخادم التفريغ.");
+    status.textContent="تعذّر إكمال التفريغ.";
+    msg($("#textMsg"),"err",reason+" لم يُحذف الصوت أو المشروع؛ يمكنك إعادة المحاولة أو استخدام اللصق اليدوي أو الإملاء أو استيراد SRT.");
+    playUi("error");
+  }finally{
+    clearTimeout(timeout);prog.classList.add("hidden");btn.disabled=false;btn.textContent="استخراج النص والتوقيت من الصوت";
   }
-  btn.disabled=false;
 }
-$("#libBtn").addEventListener("click",function(){downloadLibrary()});
+$("#whisperBtn").addEventListener("click",function(){transcribeWhisper()});
 
 /* ============ UI sounds (synthesized, quiet, optional) ============ */
 var uiCtx=null;
