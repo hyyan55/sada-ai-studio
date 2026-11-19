@@ -59,8 +59,8 @@ function offsetSeconds(value) {
 function normalizeWords(words) {
   return (Array.isArray(words) ? words : []).map(w => {
     const word = String(w.word || w.text || "").trim();
-    const start = offsetSeconds(w.start_offset ?? w.start);
-    const end = offsetSeconds(w.end_offset ?? w.end);
+    const start = offsetSeconds(w.startOffset ?? w.start_offset ?? w.start);
+    const end = offsetSeconds(w.endOffset ?? w.end_offset ?? w.end);
     return { word, start, end };
   }).filter(w => w.word && Number.isFinite(w.start) && Number.isFinite(w.end) && w.end > w.start)
     .sort((a,b) => a.start - b.start);
@@ -96,7 +96,7 @@ async function callGemini(file) {
     },
     body: JSON.stringify({
       contents: [{ parts: [{ inlineData: { mimeType, data: file.buffer.toString("base64") } }] }],
-      config: { audioTranscriptionConfig: { wordTimestamp: true } }
+      generationConfig: { audioTranscriptionConfig: { wordTimestamp: true } }
     }),
     signal: AbortSignal.timeout(180000)
   });
