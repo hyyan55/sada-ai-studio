@@ -497,7 +497,7 @@ function hideMsg(el){el.className="msg";el.textContent=""}
 function rng(seed){var x=seed;return function(){x=(x*1103515245+12345)%2147483648;return x/2147483648}}
 
 /* ============ Templates meta ============ */
-var TEMPLATES={cinema:{name:"CINEMA NOIR",ar:"سينمائي داكن",desc:"أسود عميق وتباين سينمائي وعناوين كبيرة"},editorial:{name:"EDITORIAL",ar:"تحريري فاخر",desc:"مساحات عاجية وتكوين مجلّي وخط أنيق"},kinetic:{name:"KINETIC POP",ar:"حركي جريء",desc:"ألوان نابضة وكلمات ضخمة وإيقاع سريع"},neon:{name:"NEON WAVE",ar:"نيون صوتي",desc:"ليل عميق وتوهج نيون وموجة صوتية"}};
+var TEMPLATES={cinema:{name:"PLEX MODERN",ar:"خط حديث",desc:"التصميم الهندسي القديم • خط IBM Plex Sans Arabic • حجم متوسط ولون بنفسجي داكن"},editorial:{name:"NASKH EDITORIAL",ar:"خط تحريري",desc:"التصميم الهندسي القديم • خط Noto Naskh Arabic • حروف أنيقة وحجم أكبر"},kinetic:{name:"CHANGA DISPLAY",ar:"خط عريض",desc:"التصميم الهندسي القديم • خط Changa • وزن عريض وحجم بارز"},neon:{name:"CAIRO CLASSIC",ar:"خط كلاسيكي",desc:"التصميم الهندسي القديم • خط Cairo • حجم متوازن ولون أزرق بنفسجي"}};
 var ACCENTS=["#7545D6","#39216D","#1D9E75","#2878E8","#D5A017","#C2407A"];
 
 /* ============ State ============ */
@@ -1211,14 +1211,19 @@ function drawCaptions(x,W,H,sc,t,st,alpha,idx){
   var durS=Math.max(0.1,sc.end-sc.start);
   var local=(t-sc.start)/durS;if(local<0)local=0;if(local>1)local=1;
   var mode=st.capMode||"smart";
-  var ink=st.template==="cinema"||st.template==="neon"?"#F7F3EA":st.template==="kinetic"?"#171923":st.template==="editorial"?"#28231F":"#452C8C";
-  var fontFamily=st.template==="cinema"?"IBM Plex Sans Arabic":st.template==="editorial"?"Noto Naskh Arabic":st.template==="kinetic"?"Changa":"Cairo";
+  var style={
+    cinema:{font:"IBM Plex Sans Arabic",scale:0.98,ink:"#39216D"},
+    editorial:{font:"Noto Naskh Arabic",scale:1.12,ink:"#7545D6"},
+    kinetic:{font:"Changa",scale:1.16,ink:"#241A3F"},
+    neon:{font:"Cairo",scale:1.04,ink:"#2878E8"}
+  }[st.template]||{font:"Cairo",scale:1,ink:"#452C8C"};
+  var ink=style.ink,fontFamily=style.font;
   if(st.template==="geoWords")mode="word";
   if(st.template==="geoCalm")mode="sentence";
   var hasWords=!!(sc.words&&sc.words.length);
   if(mode==="smart")mode=hasWords?"word":((sc.text.split(/\s+/).length<=7)?"word":"sentence");
   var imp=importantWords(sc.text);
-  var u=W/540,base=st.fontSize||64;
+  var u=W/540,base=(st.fontSize||64)*style.scale;
   var weight=String(st.fontWeight||800);
   var lineH=st.lineHeight||1.55;
   var maxW=W*((st.textWidth||88)/100);
@@ -1295,7 +1300,7 @@ function drawCaptions(x,W,H,sc,t,st,alpha,idx){
         var bl=(1-wp)*7*u+exitP*6*u;
         try{x.filter=bl>0.4?"blur("+bl.toFixed(1)+"px)":"none"}catch(e){}
         x.font=(isImp||isCur?"900":weight)+" "+(sizes[wi]*(isCur?1.08:1))+"px "+fontFamily+", sans-serif";
-        x.fillStyle=(isCur||isImp)?(st.accent||"#7545D6"):"#452C8C";
+        x.fillStyle=(isCur||isImp)?(st.accent||"#7545D6"):ink;
         x.textAlign="center";x.textBaseline="middle";
         x.fillText(wd.w,0,0);
         x.restore();
@@ -1315,7 +1320,7 @@ function drawFrame(x,W,H,t,st,scenes,peaks,dur){
   if(idx<0&&scenes.length&&t>=scenes[scenes.length-1].end)idx=scenes.length-1;
   var sc=idx>=0?scenes[idx]:null;
   /* brand / account, small and quiet at top center */
-  x.font="900 "+Math.round(W*0.05)+"px Cairo";x.fillStyle=tpl==="cinema"?"#E9C58A":tpl==="neon"?"#00E5FF":tpl==="kinetic"?"#171923":tpl==="editorial"?"#28231F":"#39216D";x.textAlign="center";x.textBaseline="middle";
+  x.font="900 "+Math.round(W*0.05)+"px Cairo";x.fillStyle="#39216D";x.textAlign="center";x.textBaseline="middle";
   x.fillText(st.account||"صَدَى",W/2,H*0.052);
   if(tpl==="geoCalm"&&idx>=0){
     x.font="700 "+Math.round(W*0.032)+"px Cairo";x.fillStyle="rgba(25,25,32,.45)";x.textAlign="right";
