@@ -576,6 +576,7 @@ function showHome(){$("#view-studio").style.display="none";$("#view-home").style
 $("#logoHome").addEventListener("click",function(e){e.preventDefault();showHome()});
 $("#backHome").addEventListener("click",showHome);
 function newProject(template){
+  audioEl.pause();if(typeof stopLayerPreview==="function")stopLayerPreview();
   S.projectId=null;S.scenes=[];S.transcriptWords=[];S.duration=0;S.audioBlob=null;S.audioName="";S.layers=[];revokeLayerUrls();renderLayers();
   S.settings.template=template||"geo";
   $("#projName").value="مشروع جديد";$("#transcript").value="";$("#saveState").textContent="";
