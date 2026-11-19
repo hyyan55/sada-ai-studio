@@ -569,6 +569,7 @@ $("#exportProjBtn").addEventListener("click",function(){
 var MAXMB=24;
 function clearAudioUI(){
   if(S.audioUrl){URL.revokeObjectURL(S.audioUrl);S.audioUrl=null}
+  audioBuf=null;S.duration=0;
   audioEl.removeAttribute("src");S.peaks=[];S.speechSegs=[];
   $("#fileInfo").style.display="none";hideMsg($("#audioMsg"));
 }
@@ -632,6 +633,8 @@ function handleFile(f){
   var okExt=/\.(mp3|wav|m4a|aac|ogg)$/i.test(f.name);
   if(!okTypes.includes(f.type)&&!okExt){msg($("#audioMsg"),"err","صيغة غير مدعومة. الصيغ المقبولة: MP3، WAV، M4A، AAC، OGG.");return}
   if(f.size>MAXMB*1048576){msg($("#audioMsg"),"err","الملف أكبر من الحد الأقصى ("+MAXMB+"MB). قلّص مدته أو ضغطه ثم أعد المحاولة.");return}
+  S.transcriptWords=[];S.scenes=[];$("#transcript").value="";
+  renderScenes();buildTimeline();
   setAudioBlob(f,f.name,false);
   setTimeout(function(){document.getElementById("panel-text").scrollIntoView({behavior:"smooth",block:"start"});},450);
 }
