@@ -244,6 +244,10 @@ progress{width:100%;height:16px;accent-color:var(--purple)}
 }
 
  .layer-tools{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+#panel-design input[type=color]{min-height:44px}
+#panel-design .field{margin-bottom:12px}
+#preview{touch-action:none;user-select:none;-webkit-user-select:none}
+@media(max-width:680px){#panel-design .field{margin-bottom:10px}}
 .layer-list{display:grid;gap:10px;margin-top:12px}
 .layer-card{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
 .layer-card-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-weight:800;color:var(--purple-d)}
@@ -438,7 +442,13 @@ body[data-stage="video"] #panel-export .field{margin-top:0}
             </select></div>
           <div class="field"><label>ألوان القالب — الخلفية والتفاصيل والخطوط</label><div class="swatches" id="themeSwatches"></div><p class="hint">تغيير الألوان لا يغيّر شكل الخلفية أو توزيع عناصرها.</p></div>
           <div class="field"><label>لون إبراز الكلمات</label><div class="swatches" id="swatches"></div></div>
-          <div class="field"><label>حجم الخط: <span class="val" id="fontVal"></span></label><input type="range" id="fontSize" min="36" max="110" step="2"></div>
+          <div class="field"><label>نوع الخط</label><select id="captionFont"><option value="template">خط القالب</option><option value="Cairo">Cairo</option><option value="Tajawal">Tajawal</option><option value="IBM Plex Sans Arabic">IBM Plex Sans Arabic</option><option value="Changa">Changa</option><option value="Noto Naskh Arabic">Noto Naskh Arabic</option></select></div>
+          <div class="field"><label>حجم الخط: <span class="val" id="fontVal"></span></label><input type="range" id="fontSize" min="24" max="120" step="1"></div>
+          <div class="field"><label>موضع النص أفقياً: <span class="val" id="txVal"></span></label><input type="range" id="textX" min="5" max="95" step="1"></div>
+          <div class="field"><label>موضع النص رأسياً: <span class="val" id="tyVal"></span></label><input type="range" id="textY" min="8" max="92" step="1"></div>
+          <div class="field"><label>خلفية النص</label><select id="captionBg"><option value="none">بدون خلفية</option><option value="rect">مستطيلة</option><option value="rounded">مستطيل بحواف دائرية</option><option value="pill">كبسولة</option></select></div>
+          <div class="field"><label>لون خلفية النص</label><input type="color" id="captionBgColor" style="width:100%;height:44px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:4px"></div>
+          <div class="field"><label>شفافية الخلفية: <span class="val" id="bgOpacityVal"></span></label><input type="range" id="captionBgOpacity" min="0" max="100" step="1"></div>
           <div class="field"><label>عرض منطقة النص: <span class="val" id="twVal"></span></label><input type="range" id="textWidth" min="60" max="96" step="2"></div>
           <div class="field"><label>ارتفاع منطقة النص: <span class="val" id="thVal"></span></label><input type="range" id="textHeight" min="20" max="70" step="2"></div>
           <div class="field"><label>المسافة بين الأسطر: <span class="val" id="lhVal"></span></label><input type="range" id="lineHeight" min="1.2" max="2" step="0.05"></div>
@@ -544,7 +554,7 @@ var S={
   peaks:[],speechSegs:[],
   scenes:[], /* {text,start,end,words} */
   transcriptWords:[],
-  settings:{template:"editorial",capMode:"phrase",theme:"green",accent:"#E8FFE9",fontSize:64,textPos:"center",account:"",speed:1,density:26,showWave:true,lineHeight:1.55,textWidth:88,textHeight:42,fontWeight:800,enterDur:0.14,exitDur:0.15,uiSound:true,uiVol:0.5,sfxVol:0.6},
+  settings:{template:"editorial",capMode:"phrase",theme:"green",accent:"#E8FFE9",fontSize:64,fontFamily:"template",textPos:"center",textX:50,textY:50,captionBg:"none",captionBgColor:"#241a3f",captionBgOpacity:78,account:"",speed:1,density:26,showWave:true,lineHeight:1.55,textWidth:88,textHeight:42,fontWeight:800,enterDur:0.14,exitDur:0.15,uiSound:true,uiVol:0.5,sfxVol:0.6},
   playing:false,
   layers:[], layerBuffers:{}, layerUrls:{}
 };
@@ -1099,7 +1109,11 @@ $("#advancedDesignBtn").addEventListener("click",function(){var on=document.body
 function syncSettingsUI(){
   var st=S.settings;
   $$("#tplPick button").forEach(function(b){b.classList.toggle("sel",b.dataset.t===st.template)});
-  $("#capMode").value=st.capMode;$("#fontSize").value=st.fontSize;$("#fontVal").textContent=st.fontSize;
+  $("#capMode").value=st.capMode;$("#captionFont").value=st.fontFamily||"template";$("#fontSize").value=st.fontSize;$("#fontVal").textContent=st.fontSize;
+  $("#textX").value=Math.round((st.textX==null ? .5 : st.textX)*100);$("#txVal").textContent=$("#textX").value+"%";
+  $("#textY").value=Math.round((st.textY==null ? .5 : st.textY)*100);$("#tyVal").textContent=$("#textY").value+"%";
+  $("#captionBg").value=st.captionBg||"none";$("#captionBgColor").value=st.captionBgColor||"#241a3f";
+  $("#captionBgOpacity").value=st.captionBgOpacity==null?78:st.captionBgOpacity;$("#bgOpacityVal").textContent=$("#captionBgOpacity").value+"%";
   $("#textWidth").value=st.textWidth||88;$("#twVal").textContent=(st.textWidth||88)+"%";
   $("#textHeight").value=st.textHeight||42;$("#thVal").textContent=(st.textHeight||42)+"%";
   $("#lineHeight").value=st.lineHeight||1.55;$("#lhVal").textContent=st.lineHeight||1.55;
@@ -1133,7 +1147,18 @@ function syncSettingsUI(){
     b.addEventListener("click",function(){S.settings.accent=c;syncSettingsUI();drawPreview()});
     sw.appendChild(b);
   });
-  $("#capMode").addEventListener("change",function(){S.settings.capMode=this.value;drawPreview()});
+  $("#capMode").addEventListener("change",function(){S.settings.capMode=this.value;drawPreview();saveProject(true)});
+  $("#captionFont").addEventListener("change",function(){S.settings.fontFamily=this.value;drawPreview();saveProject(true)});
+  $("#fontSize").addEventListener("input",function(){S.settings.fontSize=+this.value;$("#fontVal").textContent=this.value;drawPreview()});
+  $("#fontSize").addEventListener("change",function(){saveProject(true)});
+  $("#textX").addEventListener("input",function(){S.settings.textX=+this.value/100;$("#txVal").textContent=this.value+"%";drawPreview()});
+  $("#textY").addEventListener("input",function(){S.settings.textY=+this.value/100;$("#tyVal").textContent=this.value+"%";drawPreview()});
+  ["textX","textY"].forEach(function(id){$("#"+id).addEventListener("change",function(){saveProject(true)})});
+  $("#captionBg").addEventListener("change",function(){S.settings.captionBg=this.value;drawPreview();saveProject(true)});
+  $("#captionBgColor").addEventListener("input",function(){S.settings.captionBgColor=this.value;drawPreview()});
+  $("#captionBgColor").addEventListener("change",function(){saveProject(true)});
+  $("#captionBgOpacity").addEventListener("input",function(){S.settings.captionBgOpacity=+this.value;$("#bgOpacityVal").textContent=this.value+"%";drawPreview()});
+  $("#captionBgOpacity").addEventListener("change",function(){saveProject(true)});
   $("#fontSize").addEventListener("input",function(){S.settings.fontSize=+this.value;$("#fontVal").textContent=this.value;drawPreview()});
   $("#textWidth").addEventListener("input",function(){S.settings.textWidth=+this.value;$("#twVal").textContent=this.value+"%";drawPreview()});
   $("#textHeight").addEventListener("input",function(){S.settings.textHeight=+this.value;$("#thVal").textContent=this.value+"%";drawPreview()});
@@ -1145,7 +1170,7 @@ function syncSettingsUI(){
   $("#uiVol").addEventListener("input",function(){S.settings.uiVol=+this.value;$("#uiVolVal").textContent=Math.round(this.value*100)+"%"});
   $("#sfxVol").addEventListener("input",function(){S.settings.sfxVol=+this.value;$("#sfxVolVal").textContent=Math.round(this.value*100)+"%"});
   $("#uiVol").addEventListener("change",function(){playUi("pop")});
-  $("#textPos").addEventListener("change",function(){S.settings.textPos=this.value;drawPreview()});
+  $("#textPos").addEventListener("change",function(){S.settings.textPos=this.value;S.settings.textY=this.value==="top" ? .24 : this.value==="bottom" ? .76 : .5;$("#textY").value=Math.round(S.settings.textY*100);$("#tyVal").textContent=$("#textY").value+"%";drawPreview();saveProject(true)});
   $("#accountName").addEventListener("input",function(){S.settings.account=this.value;drawPreview()});
   $("#motionSpeed").addEventListener("input",function(){S.settings.speed=+this.value;$("#speedVal").textContent=this.value+"×";drawPreview()});
   $("#density").addEventListener("input",function(){S.settings.density=+this.value;$("#densVal").textContent=this.value;drawPreview()});
@@ -1264,13 +1289,13 @@ function drawCaptions(x,W,H,sc,t,st,alpha,idx){
     neon:{font:"Cairo",scale:1.04,ink:"#2878E8"}
   }[st.template]||{font:"Cairo",scale:1,ink:"#452C8C"};
   var palette=THEMES[st.theme]||THEMES.white;
-  var ink=palette.text||style.ink,fontFamily=style.font;
+  var ink=palette.text||style.ink,fontFamily=(st.fontFamily&&st.fontFamily!=="template")?st.fontFamily:style.font;
   if(st.template==="geoWords")mode="word";
   if(st.template==="geoCalm")mode="sentence";
   var hasWords=!!(sc.words&&sc.words.length);
   if(mode==="smart")mode=hasWords?"word":((sc.text.split(/\s+/).length<=7)?"word":"sentence");
   var imp=importantWords(sc.text);
-  var u=W/540,base=(st.fontSize||64)*style.scale;
+  var u=W/540,base=(st.fontSize||64);
   var weight=String(st.fontWeight||800);
   var lineH=st.lineHeight||1.55;
   var maxW=W*((st.textWidth||88)/100);
@@ -1279,7 +1304,8 @@ function drawCaptions(x,W,H,sc,t,st,alpha,idx){
      حتى لا تخرج الكتلة عن الشاشة عند اختيار ارتفاع كبير. ولأن المعاينة والتصدير
      يستدعيان هذه الدالة نفسها، يسري الإعداد على الاثنين معاً وبأي دقة تصدير. */
   var areaH=H*Math.max(10,Math.min(90,st.textHeight||42))/100;
-  var posY=st.textPos==="top"?H*0.24:(st.textPos==="bottom"?H*0.74:H*0.5);
+  var posX=W*Math.max(.05,Math.min(.95,st.textX==null ? .5 : st.textX));
+  var posY=H*Math.max(.08,Math.min(.92,st.textY==null?(st.textPos==="top" ? .24 : st.textPos==="bottom" ? .74 : .5):st.textY));
   if(areaH<H*0.92){var halfA=areaH/2;posY=Math.max(halfA+H*0.03,Math.min(H-halfA-H*0.03,posY))}
   var enterDur=Math.max(0.03,st.enterDur!=null?st.enterDur:0.14);
   var exitDur=Math.max(0.03,st.exitDur!=null?st.exitDur:0.15);
@@ -1291,10 +1317,14 @@ function drawCaptions(x,W,H,sc,t,st,alpha,idx){
     var scA=(0.94+0.06*easeOut(enterP))*(1-0.05*exitP);
     var blurA=(1-enterP)*9*u+exitP*7*u;
     x.globalAlpha=alpha*Math.min(1,enterP*1.4+0.1)*(1-exitP*0.92);
-    x.translate(W/2+dir*(1-easeOut(enterP))*W*0.045,posY+(1-easeOut(enterP))*H*0.014-exitP*H*0.012);
-    x.scale(scA,scA);x.translate(-W/2,-posY);
+    x.translate(posX+dir*(1-easeOut(enterP))*W*0.045,posY+(1-easeOut(enterP))*H*0.014-exitP*H*0.012);
+    x.scale(scA,scA);x.translate(-posX,-posY);
     try{x.filter=blurA>0.4?"blur("+blurA.toFixed(1)+"px)":"none"}catch(e){}
-    var nLines=wrapText(x,sc.text,W/2,posY,maxW,base,weight,ink,lineH,areaH,fontFamily);
+    var bgLines=wrapLines(x,sc.text,maxW,base,weight,fontFamily),bgSize=base;
+    while(bgLines.length>6&&bgSize>base*.62){bgSize*=.92;bgLines=wrapLines(x,sc.text,maxW,bgSize,weight,fontFamily)}
+    var bgWidth=bgLines.length?Math.max.apply(null,bgLines.map(function(line){return x.measureText(line).width})):0;
+    drawCaptionBackground(x,posX,posY,Math.min(maxW,bgWidth)+base*.7,Math.min(areaH,bgLines.length*bgSize*lineH)+base*.45,st,W);
+    var nLines=wrapText(x,sc.text,posX,posY,maxW,base,weight,ink,lineH,areaH,fontFamily);
     try{x.filter="none"}catch(e){}
     x.fillStyle=st.accent||"#7545D6";
     var lw=maxW*0.18*easeOut(enterP)*(1-exitP);
@@ -1336,7 +1366,8 @@ function drawCaptions(x,W,H,sc,t,st,alpha,idx){
     lines=lines.slice(0,Math.max(1,Math.floor(areaH/(base*scaleF*lineH))));
     lines.forEach(function(l,row){
       var total=l.reduce(function(a,i){return a+widths[i]},0)+(l.length-1)*gap*scaleF;
-      var cx=W/2+total/2;
+      drawCaptionBackground(x,posX,posY+(row-(lines.length-1)/2)*base*lineH*scaleF,total+base*.65,base*lineH*.92,st,W);
+      var cx=posX+total/2;
       l.forEach(function(wi){
         var wd=wordsData[wi];
         var wp=(t-wd.s)/0.12;
@@ -1363,6 +1394,16 @@ function drawCaptions(x,W,H,sc,t,st,alpha,idx){
   x.restore();
 }
 
+function drawCaptionBackground(ctx,cx,cy,w,h,st,W){
+  var shape=st.captionBg||"none";if(shape==="none")return;
+  var color=st.captionBgColor||"#241a3f",opacity=Math.max(0,Math.min(100,st.captionBgOpacity==null?78:st.captionBgOpacity))/100;
+  if(!opacity)return;
+  var pad=Math.max(5,W*.012),left=cx-w/2-pad,top=cy-h/2-pad*.65,bw=w+pad*2,bh=h+pad*1.3;
+  var radius=shape==="pill"?bh/2:shape==="rounded"?Math.min(bh*.28,W*.035):0;
+  ctx.save();ctx.globalAlpha*=opacity;ctx.fillStyle=color;
+  if(typeof ctx.roundRect==="function"){ctx.beginPath();ctx.roundRect(left,top,bw,bh,radius);ctx.fill()}else{ctx.fillRect(left,top,bw,bh)}
+  ctx.restore();
+}
 function drawFrame(x,W,H,t,st,scenes,peaks,dur){
   var tpl=st.template||"geo";
   var palette=THEMES[st.theme]||THEMES.white;
@@ -1451,6 +1492,23 @@ $("#layerImages").addEventListener("change",function(){Array.from(this.files||[]
 $("#layerAudios").addEventListener("change",function(){Array.from(this.files||[]).forEach(function(f){if(f.type.startsWith("audio/"))addLayerFile(f,"audio")});this.value=""});
 $("#addTextLayer").addEventListener("click",function(){var t=prompt("اكتب النص الذي تريد إضافته إلى الفيديو:");if(t&&t.trim()){S.layers.push({id:uid(),type:"text",name:"نص إضافي",text:t.trim(),start:audioEl.currentTime||0,end:S.duration||5,x:.5,y:.78,scale:1,color:"#fff"});renderLayers();drawPreview();saveProject(true)}});
 var pv=$("#preview"),pvx=pv.getContext("2d");
+var captionDrag=null;
+function canvasCaptionPoint(ev){var r=pv.getBoundingClientRect();return{x:(ev.clientX-r.left)/r.width*pv.width,y:(ev.clientY-r.top)/r.height*pv.height};}
+pv.style.touchAction="none";pv.style.cursor="grab";
+pv.addEventListener("pointerdown",function(ev){
+  if(document.body.dataset.stage!=="video"||!S.scenes.length)return;
+  var p=canvasCaptionPoint(ev),cx=pv.width*(S.settings.textX==null ? .5 : S.settings.textX),cy=pv.height*(S.settings.textY==null ? .5 : S.settings.textY);
+  if(Math.abs(p.x-cx)>pv.width*.38||Math.abs(p.y-cy)>pv.height*.16)return;
+  captionDrag={pointerId:ev.pointerId};pv.setPointerCapture(ev.pointerId);pv.style.cursor="grabbing";ev.preventDefault();
+});
+pv.addEventListener("pointermove",function(ev){
+  if(!captionDrag)return;var p=canvasCaptionPoint(ev);
+  S.settings.textX=Math.max(.05,Math.min(.95,p.x/pv.width));S.settings.textY=Math.max(.08,Math.min(.92,p.y/pv.height));
+  $("#textX").value=Math.round(S.settings.textX*100);$("#txVal").textContent=$("#textX").value+"%";
+  $("#textY").value=Math.round(S.settings.textY*100);$("#tyVal").textContent=$("#textY").value+"%";drawPreview();
+});
+function endCaptionDrag(){if(!captionDrag)return;captionDrag=null;pv.style.cursor="grab";saveProject(true);}
+pv.addEventListener("pointerup",endCaptionDrag);pv.addEventListener("pointercancel",endCaptionDrag);
 function drawPreview(){
   var t=S.audioUrl?audioEl.currentTime:0;
   drawFrame(pvx,pv.width,pv.height,t,S.settings,S.scenes,S.peaks,S.duration);drawLayerFrames(pvx,pv.width,pv.height,t);
