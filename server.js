@@ -1,23 +1,13 @@
 import express from "express";
 import multer from "multer";
-import cors from "cors";
 import rateLimit from "express-rate-limit";
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 const MAX_FILE_BYTES = 24 * 1024 * 1024;
 const GEMINI_MAX_DURATION = 15 * 60;
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "").split(",").map(v => v.trim()).filter(Boolean);
 
 app.disable("x-powered-by");
-app.use(cors({
-  origin(origin, callback) {
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-    return callback(new Error("Origin not allowed"));
-  },
-  methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type"]
-}));
 app.use("/api/", rateLimit({
   windowMs: 15 * 60 * 1000, limit: 12,
   standardHeaders: "draft-7", legacyHeaders: false,
@@ -316,11 +306,17 @@ app.use((err, _req, res, _next) => {
   if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
     return res.status(413).json({ error: "حجم الملف أكبر من الحد المسموح (24MB)." });
   }
-  if (err.message === "Origin not allowed") return res.status(403).json({ error: "هذا النطاق غير مسموح له باستخدام الخدمة." });
   console.error("API error:", err.message);
   return res.status(400).json({ error: "تعذّر استقبال الطلب. تحقق من البيانات ثم أعد المحاولة." });
 });
 
+// Serve the complete single-page application from this same Web Service.
+app.get("/", (_req, res) => {
+  res.sendFile("index.html", { root: process.cwd() });
+});
+
+app.use((_req, res) => res.status(404).json({ error: "المسار المطلوب غير موجود." }));
+
 app.listen(PORT, "0.0.0.0", () => {
-  console.log("Sada API listening on port " + PORT);
+  console.log("Sada Web Service listening on port " + PORT);
 });
