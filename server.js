@@ -7,12 +7,12 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 const MAX_FILE_BYTES = 24 * 1024 * 1024;
 const GEMINI_MAX_DURATION = 15 * 60;
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "*").split(",").map(v => v.trim()).filter(Boolean);
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "").split(",").map(v => v.trim()).filter(Boolean);
 
 app.disable("x-powered-by");
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || ALLOWED_ORIGINS.includes("*") || ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
     return callback(new Error("Origin not allowed"));
   },
   methods: ["GET", "POST"],
