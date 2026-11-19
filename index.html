@@ -202,6 +202,47 @@ progress{width:100%;height:16px;accent-color:var(--purple)}
   .studio-head .btn{flex:1 1 auto}
 }
 @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+
+/* ===== Sada responsive alignment pass ===== */
+.studio-head{
+  display:grid;
+  grid-template-columns:auto minmax(180px,1fr) auto auto;
+  gap:10px;
+  align-items:center;
+}
+.studio-head input[name=projname]{width:100%;min-width:0}
+.studio-head .save-state{grid-column:2 / 3;grid-row:2;min-height:0}
+.studio-head #saveBtn{grid-column:3;grid-row:1}
+.studio-head #exportProjBtn{grid-column:4;grid-row:1}
+.preview-col{min-width:0;width:100%}
+.preview-box{width:100%;max-width:440px;margin-inline:auto}
+.preview-box canvas{width:min(100%,300px);height:auto;aspect-ratio:9/16;object-fit:contain}
+.preview-ctl{width:100%;gap:10px}
+.timeline{width:100%;min-width:0}
+@media(max-width:680px){
+  .studio-head{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    gap:9px;
+    padding:12px 0 8px;
+  }
+  .studio-head #backHome{grid-column:1;grid-row:1;width:100%}
+  .studio-head input[name=projname]{grid-column:2;grid-row:1;width:100%;font-size:15px;padding:8px 10px}
+  .studio-head #saveBtn{grid-column:1;grid-row:2;width:100%;min-height:44px}
+  .studio-head #exportProjBtn{grid-column:2;grid-row:2;width:100%;min-height:44px}
+  .studio-head .save-state{grid-column:1 / -1;grid-row:3;text-align:center}
+  .studio-grid{display:flex;flex-direction:column;gap:14px}
+  .preview-col{order:-1;width:100%}
+  .preview-box{max-width:100%;padding:12px}
+  .preview-box canvas{width:min(76vw,280px);max-width:100%;height:auto;margin-inline:auto}
+  .preview-ctl{display:grid;grid-template-columns:repeat(3,48px) minmax(0,1fr);justify-content:center}
+  .preview-ctl .time{text-align:center;white-space:nowrap}
+  .timeline p{line-height:1.6}
+}
+@media(min-width:681px) and (max-width:959px){
+  .studio-head{grid-template-columns:auto minmax(180px,1fr) auto auto}
+  .preview-box canvas{width:min(100%,300px)}
+}
+
 </style>
 </head>
 <body>
