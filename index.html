@@ -689,8 +689,19 @@ function togglePlay(){
   if(!S.audioUrl)return;
   if(audioEl.paused){audioEl.play()}else{audioEl.pause()}
 }
-audioEl.addEventListener("play",function(){$("#playBtn").textContent="⏸ إيقاف";$("#pvPlay").textContent="⏸";S.playing=true;if(actx&&actx.state==="suspended")actx.resume();loopPreview()});
-audioEl.addEventListener("pause",function(){$("#playBtn").textContent="▶ تشغيل";$("#pvPlay").textContent="▶";S.playing=false;drawPreview()});
+var layerPreviewSources=[];
+function stopLayerPreview(){layerPreviewSources.forEach(function(src){try{src.stop()}catch(e){}});layerPreviewSources=[];}
+function startLayerPreview(){
+  stopLayerPreview();var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;if(!actx)actx=new AC();if(actx.state==="suspended")actx.resume();
+  var now=audioEl.currentTime;
+  S.layers.filter(function(l){return l.type==="audio"&&S.layerBuffers[l.id]&&l.end>now}).forEach(function(l){
+    var buf=S.layerBuffers[l.id],offset=Math.max(0,now-l.start),delay=Math.max(0,l.start-now),remaining=Math.min(buf.duration-offset,l.end-Math.max(now,l.start));
+    if(remaining<=0)return;var src=actx.createBufferSource(),g=actx.createGain();src.buffer=buf;g.gain.value=Math.max(0,Math.min(2,l.volume==null?0.8:l.volume));src.connect(g);g.connect(actx.destination);src.start(actx.currentTime+delay,offset,remaining);layerPreviewSources.push(src);
+  });
+}
+audioEl.addEventListener("play",function(){$("#playBtn").textContent="⏸ إيقاف";$("#pvPlay").textContent="⏸";S.playing=true;if(actx&&actx.state==="suspended")actx.resume();startLayerPreview();loopPreview()});
+audioEl.addEventListener("pause",function(){stopLayerPreview();$("#playBtn").textContent="▶ تشغيل";$("#pvPlay").textContent="▶";S.playing=false;drawPreview()});
+audioEl.addEventListener("seeked",function(){if(!audioEl.paused)startLayerPreview()});
 audioEl.addEventListener("timeupdate",function(){
   $("#playTime").textContent=fmtT(audioEl.currentTime)+" / "+fmtT(S.duration);
   drawWave(audioEl.currentTime);
