@@ -396,13 +396,15 @@ body.auto-design #panel-design .field:not(:nth-of-type(1)):not(:nth-of-type(2)),
           <h2><span class="st">3</span>التصميم والحركة</h2>
           <div class="field"><label>القالب</label><div class="tpl-pick" id="tplPick"></div></div>
           <button class="btn btn-g btn-s" id="advancedDesignBtn" type="button" aria-expanded="false">⚙ إعدادات متقدمة</button>
-          <div class="field"><label>نمط الترجمة (Mixed Captions)</label>
+          <div class="field"><label>طريقة ظهور النص</label>
             <select id="capMode">
               <option value="smart">ذكي مختلط — يختار حسب طول المشهد</option>
-              <option value="word">كلمة بكلمة — تظهر مع النطق</option>
-              <option value="sentence">جمل كاملة — تظهر وتختفي بحركة</option>
+              <option value="sentence">جمل طويلة — الجملة كاملة</option>
+              <option value="phrase">جمل قصيرة — مقاطع من كلمتين إلى ثلاث</option>
+              <option value="word">كلمة كلمة — بالتزامن مع النطق</option>
             </select></div>
-          <div class="field"><label>لون الإبراز</label><div class="swatches" id="swatches"></div></div>
+          <div class="field"><label>ألوان القالب — الخلفية والتفاصيل والخطوط</label><div class="swatches" id="themeSwatches"></div><p class="hint">تغيير الألوان لا يغيّر شكل الخلفية أو توزيع عناصرها.</p></div>
+          <div class="field"><label>لون إبراز الكلمات</label><div class="swatches" id="swatches"></div></div>
           <div class="field"><label>حجم الخط: <span class="val" id="fontVal"></span></label><input type="range" id="fontSize" min="36" max="110" step="2"></div>
           <div class="field"><label>عرض منطقة النص: <span class="val" id="twVal"></span></label><input type="range" id="textWidth" min="60" max="96" step="2"></div>
           <div class="field"><label>ارتفاع منطقة النص: <span class="val" id="thVal"></span></label><input type="range" id="textHeight" min="20" max="70" step="2"></div>
@@ -497,7 +499,8 @@ function hideMsg(el){el.className="msg";el.textContent=""}
 function rng(seed){var x=seed;return function(){x=(x*1103515245+12345)%2147483648;return x/2147483648}}
 
 /* ============ Templates meta ============ */
-var TEMPLATES={cinema:{name:"PLEX MODERN",ar:"خط حديث",desc:"التصميم الهندسي القديم • خط IBM Plex Sans Arabic • حجم متوسط ولون بنفسجي داكن"},editorial:{name:"NASKH EDITORIAL",ar:"خط تحريري",desc:"التصميم الهندسي القديم • خط Noto Naskh Arabic • حروف أنيقة وحجم أكبر"},kinetic:{name:"CHANGA DISPLAY",ar:"خط عريض",desc:"التصميم الهندسي القديم • خط Changa • وزن عريض وحجم بارز"},neon:{name:"CAIRO CLASSIC",ar:"خط كلاسيكي",desc:"التصميم الهندسي القديم • خط Cairo • حجم متوازن ولون أزرق بنفسجي"}};
+var THEMES={white:{name:"أبيض",bg:"#F8F8F6",detail:"25,25,32",text:"#39216D",accent:"#7545D6"},green:{name:"أخضر",bg:"#16834A",detail:"255,255,255",text:"#FFFFFF",accent:"#E8FFE9"},midnight:{name:"داكن",bg:"#111827",detail:"255,255,255",text:"#FFFFFF",accent:"#67E8F9"},lavender:{name:"بنفسجي",bg:"#EDE5FF",detail:"57,33,109",text:"#39216D",accent:"#7545D6"}};
+var TEMPLATES={cinema:{name:"PLEX MODERN",ar:"خط حديث",desc:"جمل طويلة • IBM Plex Sans Arabic",mode:"sentence",theme:"white"},editorial:{name:"NASKH EDITORIAL",ar:"خط تحريري",desc:"جمل قصيرة • Noto Naskh Arabic",mode:"phrase",theme:"green"},kinetic:{name:"CHANGA DISPLAY",ar:"خط عريض",desc:"كلمة كلمة • Changa",mode:"word",theme:"midnight"},neon:{name:"CAIRO CLASSIC",ar:"خط كلاسيكي",desc:"كلمة كلمة • Cairo",mode:"word",theme:"lavender"}};
 var ACCENTS=["#7545D6","#39216D","#1D9E75","#2878E8","#D5A017","#C2407A"];
 
 /* ============ State ============ */
@@ -507,7 +510,7 @@ var S={
   peaks:[],speechSegs:[],
   scenes:[], /* {text,start,end,words} */
   transcriptWords:[],
-  settings:{template:"editorial",capMode:"smart",accent:"#7545D6",fontSize:64,textPos:"center",account:"",speed:1,density:26,showWave:true,lineHeight:1.55,textWidth:88,textHeight:42,fontWeight:800,enterDur:0.14,exitDur:0.15,uiSound:true,uiVol:0.5,sfxVol:0.6},
+  settings:{template:"editorial",capMode:"phrase",theme:"green",accent:"#E8FFE9",fontSize:64,textPos:"center",account:"",speed:1,density:26,showWave:true,lineHeight:1.55,textWidth:88,textHeight:42,fontWeight:800,enterDur:0.14,exitDur:0.15,uiSound:true,uiVol:0.5,sfxVol:0.6},
   playing:false,
   layers:[], layerBuffers:{}, layerUrls:{}
 };
@@ -562,7 +565,7 @@ function refreshProjects(){
   });
 }
 function openProject(p){
-  S.projectId=p.id;S.scenes=p.scenes||[];S.transcriptWords=p.transcriptWords||[];S.settings=Object.assign({},S.settings,p.settings||{});S.layers=p.layers||[];restoreLayerAssets();
+  S.projectId=p.id;S.scenes=p.scenes||[];S.transcriptWords=p.transcriptWords||[];S.settings=Object.assign({},S.settings,p.settings||{});if(!S.settings.theme)S.settings.theme=(TEMPLATES[S.settings.template]||TEMPLATES.editorial).theme;S.layers=p.layers||[];restoreLayerAssets();
   S.duration=p.duration||0;$("#projName").value=p.name;$("#transcript").value=p.transcript||"";
   if(p.audioBlob){setAudioBlob(p.audioBlob,p.audioName||"audio",true)}else{clearAudioUI()}
   renderLayers();
@@ -579,6 +582,8 @@ function newProject(template){
   audioEl.pause();if(typeof stopLayerPreview==="function")stopLayerPreview();
   S.projectId=null;S.playing=false;lastPvScene=-1;S.scenes=[];S.transcriptWords=[];S.duration=0;S.audioBlob=null;S.audioName="";S.layers=[];revokeLayerUrls();renderLayers();
   S.settings.template=template||"editorial";
+  var chosen=TEMPLATES[S.settings.template]||TEMPLATES.editorial;
+  S.settings.capMode=chosen.mode;S.settings.theme=chosen.theme;S.settings.accent=THEMES[chosen.theme].accent;
   $("#projName").value="";$("#transcript").value="";$("#saveState").textContent="";
   clearAudioUI();hideMsg($("#textMsg"));syncSettingsUI();renderScenes();buildTimeline();showStudio();
 }
@@ -1071,14 +1076,17 @@ function syncSettingsUI(){
   $("#density").value=st.density;$("#densVal").textContent=st.density;
   $("#showWave").checked=!!st.showWave;
   $$("#swatches .swatch").forEach(function(b){b.classList.toggle("sel",b.dataset.c===st.accent)});
+  $$("#themeSwatches .swatch").forEach(function(b){b.classList.toggle("sel",b.dataset.theme===st.theme)});
 }
 (function buildSettings(){
   var pick=$("#tplPick");
   Object.keys(TEMPLATES).forEach(function(k){
     var b=document.createElement("button");b.type="button";b.dataset.t=k;b.textContent=TEMPLATES[k].ar;
-    b.addEventListener("click",function(){S.settings.template=k;syncSettingsUI();drawPreview()});
+    b.addEventListener("click",function(){S.settings.template=k;S.settings.capMode=TEMPLATES[k].mode;S.settings.theme=TEMPLATES[k].theme;S.settings.accent=THEMES[TEMPLATES[k].theme].accent;syncSettingsUI();drawPreview();saveProject(true)});
     pick.appendChild(b);
   });
+  var ts=$("#themeSwatches");
+  Object.keys(THEMES).forEach(function(k){var b=document.createElement("button");b.type="button";b.className="swatch";b.dataset.theme=k;b.style.background=THEMES[k].bg;b.setAttribute("aria-label","ثيم "+THEMES[k].name);b.title=THEMES[k].name;b.addEventListener("click",function(){S.settings.theme=k;S.settings.accent=THEMES[k].accent;syncSettingsUI();drawPreview();saveProject(true)});ts.appendChild(b)});
   var sw=$("#swatches");
   ACCENTS.forEach(function(c){
     var b=document.createElement("button");b.type="button";b.className="swatch";b.dataset.c=c;b.style.background=c;b.setAttribute("aria-label","لون "+c);
@@ -1143,13 +1151,15 @@ function geoBackground(x,W,H,t,amp,st){
   var driftAmp=calm?0.4:1;
   var drift=Math.sin(t*0.12)*W*0.012*driftAmp;
   var drift2=Math.cos(t*0.09)*H*0.010*driftAmp;
-  x.fillStyle="#F8F8F6";x.fillRect(0,0,W,H);
+  var palette=THEMES[st.theme]||THEMES.white;
+  var detail=palette.detail||"25,25,32";
+  x.fillStyle=palette.bg;x.fillRect(0,0,W,H);
   function band(cx,cy,len,wid,angle,a){
     x.save();x.translate(cx,cy);x.rotate(angle);
     var g=x.createLinearGradient(0,-wid/2,0,wid/2);
-    g.addColorStop(0,"rgba(28,28,34,0)");
-    g.addColorStop(0.5,"rgba(28,28,34,"+a+")");
-    g.addColorStop(1,"rgba(28,28,34,0)");
+    g.addColorStop(0,"rgba("+detail+",0)");
+    g.addColorStop(0.5,"rgba("+detail+","+a+")");
+    g.addColorStop(1,"rgba("+detail+",0)");
     x.fillStyle=g;x.fillRect(-len/2,-wid/2,len,wid);x.restore();
   }
   var pulseA=tpl==="geoPulse"?(0.7+amp*0.7):1;
@@ -1167,32 +1177,32 @@ function geoBackground(x,W,H,t,amp,st){
   var ga=calm?0.65:1;
   x.save();
   x.translate(Math.sin(t*0.1)*W*0.004*driftAmp,Math.cos(t*0.08)*H*0.003*driftAmp);
-  x.strokeStyle="rgba(25,25,32,"+(0.15*ga)+")";x.lineWidth=Math.max(1,u*0.9);
+  x.strokeStyle="rgba("+detail+","+(0.15*ga)+")";x.lineWidth=Math.max(1,u*0.9);
   x.setLineDash([u*4,u*5]);x.beginPath();
   for(var c=0;c<=cols;c++){var px=gx0+(gx1-gx0)*c/cols;x.moveTo(px,gy0);x.lineTo(px,gy1)}
   for(var r=0;r<=rows;r++){var py=gy0+(gy1-gy0)*r/rows;x.moveTo(gx0,py);x.lineTo(gx1,py)}
   x.stroke();x.setLineDash([]);
   var dotR=(tpl==="geoPulse"?(1.5+amp*1.8):2.1)*u;
-  x.fillStyle="rgba(25,25,32,"+(0.38*ga)+")";
+  x.fillStyle="rgba("+detail+","+(0.38*ga)+")";
   for(var c2=0;c2<=cols;c2++)for(var r2=0;r2<=rows;r2++){x.beginPath();x.arc(gx0+(gx1-gx0)*c2/cols,gy0+(gy1-gy0)*r2/rows,dotR,0,6.29);x.fill()}
-  x.strokeStyle="rgba(25,25,32,0.32)";x.lineWidth=Math.max(1,u);
+  x.strokeStyle="rgba("+detail+",0.32)";x.lineWidth=Math.max(1,u);
   [[gx0,gy0],[gx1,gy0],[gx0,gy1],[gx1,gy1]].forEach(function(p){var s=u*7;x.beginPath();x.moveTo(p[0]-s,p[1]);x.lineTo(p[0]+s,p[1]);x.moveTo(p[0],p[1]-s);x.lineTo(p[0],p[1]+s);x.stroke()});
   x.restore();
   /* black partial geometric shapes (#) at corners, softened with shadow blur */
   function hash(px,py,size,rot,a){
     x.save();x.translate(px,py);x.rotate(rot);
     x.font="900 "+size+"px Cairo, sans-serif";x.textAlign="center";x.textBaseline="middle";
-    x.shadowColor="rgba(14,14,18,"+a+")";x.shadowBlur=size*0.18;
-    x.fillStyle="rgba(14,14,18,"+a+")";x.fillText("#",0,0);x.restore();
+    x.shadowColor="rgba("+detail+","+a+")";x.shadowBlur=size*0.18;
+    x.fillStyle="rgba("+detail+","+a+")";x.fillText("#",0,0);x.restore();
   }
   hash(W*1.03,H*0.045,W*0.44,0.05,0.9);
   hash(W*0.0,H*0.985,W*0.58,-0.04,0.94);
   /* small barcode, bottom-right */
   var R=rng(99),bx=W*0.665,by=H*0.94,bh=H*0.03,cxp=bx;
-  x.fillStyle="rgba(20,20,26,0.62)";
+  x.fillStyle="rgba("+detail+",0.62)";
   while(cxp<W*0.935){var bw3=(0.8+R()*2.6)*u;if(R()>0.32)x.fillRect(cxp,by,bw3,bh);cxp+=bw3+(0.8+R()*2.2)*u}
   /* quiet technical detail, top-left */
-  x.font="600 "+Math.max(9,Math.round(u*10))+"px Cairo, sans-serif";x.fillStyle="rgba(25,25,32,0.38)";x.textAlign="left";x.textBaseline="middle";
+  x.font="600 "+Math.max(9,Math.round(u*10))+"px Cairo, sans-serif";x.fillStyle="rgba("+detail+",0.58)";x.textAlign="left";x.textBaseline="middle";
   x.fillText("SADA • 9:16",W*0.05,H*0.026);
 }
 
@@ -1213,7 +1223,8 @@ function drawCaptions(x,W,H,sc,t,st,alpha,idx){
     kinetic:{font:"Changa",scale:1.16,ink:"#241A3F"},
     neon:{font:"Cairo",scale:1.04,ink:"#2878E8"}
   }[st.template]||{font:"Cairo",scale:1,ink:"#452C8C"};
-  var ink=style.ink,fontFamily=style.font;
+  var palette=THEMES[st.theme]||THEMES.white;
+  var ink=palette.text||style.ink,fontFamily=style.font;
   if(st.template==="geoWords")mode="word";
   if(st.template==="geoCalm")mode="sentence";
   var hasWords=!!(sc.words&&sc.words.length);
@@ -1255,6 +1266,11 @@ function drawCaptions(x,W,H,sc,t,st,alpha,idx){
       var ws=sc.text.split(/\s+/).filter(Boolean);
       var tot=ws.reduce(function(a,w){return a+w.length+1},0)||1,acc=sc.start+0.02,span=Math.max(0.1,(sc.end-sc.start)-0.04);
       wordsData=ws.map(function(w){var d=span*((w.length+1)/tot);var o={w:w,s:acc,e:acc+Math.max(0.08,d)};acc+=d;return o});
+    }
+    if(mode==="phrase"){
+      var grouped=[];
+      for(var gi=0;gi<wordsData.length;gi+=3){var part=wordsData.slice(gi,gi+3);grouped.push({w:part.map(function(v){return v.w}).join(" "),s:part[0].s,e:part[part.length-1].e})}
+      wordsData=grouped;
     }
     x.textAlign="center";x.textBaseline="middle";
     /* عدد الأسطر المسموح يُشتق من ارتفاع منطقة النص: كلما صغُر الخط أثناء
@@ -1316,10 +1332,10 @@ function drawFrame(x,W,H,t,st,scenes,peaks,dur){
   if(idx<0&&scenes.length&&t>=scenes[scenes.length-1].end)idx=scenes.length-1;
   var sc=idx>=0?scenes[idx]:null;
   /* brand / account, small and quiet at top center */
-  x.font="900 "+Math.round(W*0.05)+"px Cairo";x.fillStyle="#39216D";x.textAlign="center";x.textBaseline="middle";
+  x.font="900 "+Math.round(W*0.05)+"px Cairo";x.fillStyle=(THEMES[st.theme]||THEMES.white).text;x.textAlign="center";x.textBaseline="middle";
   x.fillText(st.account||"صَدَى",W/2,H*0.052);
   if(tpl==="geoCalm"&&idx>=0){
-    x.font="700 "+Math.round(W*0.032)+"px Cairo";x.fillStyle="rgba(25,25,32,.45)";x.textAlign="right";
+    x.font="700 "+Math.round(W*0.032)+"px Cairo";x.fillStyle="rgba("+((THEMES[st.theme]||THEMES.white).detail)+",.62)";x.textAlign="right";
     x.fillText((idx+1)+" / "+scenes.length,W*0.94,H*0.052);
   }
   /* waveform strip from the real audio peaks (purple, subtle) */
@@ -1329,13 +1345,13 @@ function drawFrame(x,W,H,t,st,scenes,peaks,dur){
     for(var i2=0;i2<n;i2++){
       var hh=Math.max(2,peaks[i2]*maxH);
       var played=dur&&(i2/n)*dur<=t;
-      x.fillStyle=played?(st.accent||"#7545D6"):"rgba(117,69,214,.28)";
+      x.fillStyle=played?(st.accent||palette.accent):"rgba("+palette.detail+",.28)";
       x.fillRect(x0+i2*bw2,wy-hh/2,Math.max(1,bw2-1),hh);
     }
   }
   if(sc){drawCaptions(x,W,H,sc,t,st,1,idx)}
   else if(!scenes.length){
-    x.font="700 "+Math.round(W*0.048)+"px Cairo";x.fillStyle="#6D5AA8";x.textAlign="center";x.textBaseline="middle";
+    x.font="700 "+Math.round(W*0.048)+"px Cairo";x.fillStyle=(THEMES[st.theme]||THEMES.white).text;x.textAlign="center";x.textBaseline="middle";
     x.fillText("أضف صوتاً ونصاً لتبدأ المعاينة",W/2,H*0.5);
   }
 }
@@ -1446,11 +1462,13 @@ function buildTimeline(){
   function tick(){
     var t=((performance.now()-t0)/1000)%8;
     $$("canvas[data-demo]").forEach(function(cv){
-      var st=Object.assign({},S.settings,{template:cv.dataset.demo,fontSize:30,density:22,account:""});
+      var dk=cv.dataset.demo,dt=TEMPLATES[dk]||TEMPLATES.editorial;
+      var st=Object.assign({},S.settings,{template:dk,capMode:dt.mode,theme:dt.theme,accent:THEMES[dt.theme].accent,fontSize:30,density:22,account:""});
       drawFrame(cv.getContext("2d"),cv.width,cv.height,t,st,demoScenes,demoPeaks,8);
     });
     $$("canvas[data-tpl]").forEach(function(cv){
-      var st=Object.assign({},S.settings,{template:cv.dataset.tpl,fontSize:30,density:22,account:""});
+      var tk=cv.dataset.tpl,tt=TEMPLATES[tk]||TEMPLATES.editorial;
+      var st=Object.assign({},S.settings,{template:tk,capMode:tt.mode,theme:tt.theme,accent:THEMES[tt.theme].accent,fontSize:30,density:22,account:""});
       drawFrame(cv.getContext("2d"),cv.width,cv.height,t,st,demoScenes,demoPeaks,8);
     });
     if($("#view-home").style.display!=="none")requestAnimationFrame(tick);
