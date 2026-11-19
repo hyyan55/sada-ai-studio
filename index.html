@@ -8,7 +8,7 @@
 <title>صَدَى | SADA AI Reels Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Changa:wght@400;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --white:#FFFFFF; --purple:#7545D6; --purple-l:#B99AFF; --purple-d:#39216D;
@@ -1100,23 +1100,23 @@ function sceneAt(t){
   if(S.scenes.length&&t>=S.scenes[S.scenes.length-1].end)return S.scenes.length-1;
   return -1;
 }
-function wrapLines(x,text,maxW,size,weight){
-  x.font=weight+" "+size+"px Cairo, sans-serif";
+function wrapLines(x,text,maxW,size,weight,fontFamily){
+  x.font=weight+" "+size+"px "+(fontFamily||"Cairo")+", sans-serif";
   var words=text.split(/\s+/).filter(Boolean),lines=[],line="";
   words.forEach(function(w){var test=line?line+" "+w:w;
     if(x.measureText(test).width>maxW&&line){lines.push(line);line=w}else line=test});
   if(line)lines.push(line);
   return lines;
 }
-function wrapText(x,text,cx,y,maxW,size,weight,color,lineH,areaH){
+function wrapText(x,text,cx,y,maxW,size,weight,color,lineH,areaH,fontFamily){
   /* الجمل الطويلة تُقسَّم إلى أسطر متناسقة أولاً؛ لا يُصغَّر الخط إلا عند الحاجة
      وبحد أدنى 62% من الحجم المطلوب حتى لا يظهر النص صغيراً في فراغ كبير.
      إن مُرّر areaH (ارتفاع منطقة النص بالبكسل) فيُصغَّر الخط أيضاً حتى يبقى
      إجمالي ارتفاع كتلة الأسطر داخل هذا الارتفاع، وبحد أدنى 55%. */
-  var maxLines=6,s=size,lines=wrapLines(x,text,maxW,s,weight);
-  while(lines.length>maxLines&&s>size*0.62){s*=0.92;lines=wrapLines(x,text,maxW,s,weight)}
-  if(areaH&&areaH>0){while(lines.length*s*lineH>areaH&&s>size*0.55){s*=0.92;lines=wrapLines(x,text,maxW,s,weight)}}
-  x.font=weight+" "+s+"px Cairo, sans-serif";x.fillStyle=color;x.textAlign="center";x.textBaseline="middle";
+  var maxLines=6,s=size,lines=wrapLines(x,text,maxW,s,weight,fontFamily);
+  while(lines.length>maxLines&&s>size*0.62){s*=0.92;lines=wrapLines(x,text,maxW,s,weight,fontFamily)}
+  if(areaH&&areaH>0){while(lines.length*s*lineH>areaH&&s>size*0.55){s*=0.92;lines=wrapLines(x,text,maxW,s,weight,fontFamily)}}
+  x.font=weight+" "+s+"px "+(fontFamily||"Cairo")+", sans-serif";x.fillStyle=color;x.textAlign="center";x.textBaseline="middle";
   lines=lines.slice(0,maxLines);
   lines.forEach(function(l,i){x.fillText(l,cx,y+(i-(lines.length-1)/2)*s*lineH)});
   return lines.length;
@@ -1174,7 +1174,7 @@ function geoBackground(x,W,H,t,amp,st){
   /* black partial geometric shapes (#) at corners, softened with shadow blur */
   function hash(px,py,size,rot,a){
     x.save();x.translate(px,py);x.rotate(rot);
-    x.font="900 "+size+"px Cairo, sans-serif";x.textAlign="center";x.textBaseline="middle";
+    x.font="900 "+size+"px "+fontFamily+", sans-serif";x.textAlign="center";x.textBaseline="middle";
     x.shadowColor="rgba(14,14,18,"+a+")";x.shadowBlur=size*0.18;
     x.fillStyle="rgba(14,14,18,"+a+")";x.fillText("#",0,0);x.restore();
   }
@@ -1185,7 +1185,7 @@ function geoBackground(x,W,H,t,amp,st){
   x.fillStyle="rgba(20,20,26,0.62)";
   while(cxp<W*0.935){var bw3=(0.8+R()*2.6)*u;if(R()>0.32)x.fillRect(cxp,by,bw3,bh);cxp+=bw3+(0.8+R()*2.2)*u}
   /* quiet technical detail, top-left */
-  x.font="600 "+Math.max(9,Math.round(u*10))+"px Cairo, sans-serif";x.fillStyle="rgba(25,25,32,0.38)";x.textAlign="left";x.textBaseline="middle";
+  x.font="600 "+Math.max(9,Math.round(u*10))+"px "+fontFamily+", sans-serif";x.fillStyle="rgba(25,25,32,0.38)";x.textAlign="left";x.textBaseline="middle";
   x.fillText("SADA • 9:16",W*0.05,H*0.026);
 }
 
@@ -1230,7 +1230,7 @@ function drawCaptions(x,W,H,sc,t,st,alpha,idx){
     x.translate(W/2+dir*(1-easeOut(enterP))*W*0.045,posY+(1-easeOut(enterP))*H*0.014-exitP*H*0.012);
     x.scale(scA,scA);x.translate(-W/2,-posY);
     try{x.filter=blurA>0.4?"blur("+blurA.toFixed(1)+"px)":"none"}catch(e){}
-    var nLines=wrapText(x,sc.text,W/2,posY,maxW,base,weight,ink,lineH,areaH);
+    var nLines=wrapText(x,sc.text,W/2,posY,maxW,base,weight,ink,lineH,areaH,fontFamily);
     try{x.filter="none"}catch(e){}
     x.fillStyle=st.accent||"#7545D6";
     var lw=maxW*0.18*easeOut(enterP)*(1-exitP);
@@ -1250,7 +1250,7 @@ function drawCaptions(x,W,H,sc,t,st,alpha,idx){
     for(var attempt=0;attempt<5;attempt++){
       sizes=wordsData.map(function(wd){return base*scaleF*(imp.indexOf(wd.w)>=0?1.15:1)});
       widths=wordsData.map(function(wd,i){
-        x.font=(imp.indexOf(wd.w)>=0?"900":weight)+" "+sizes[i]+"px Cairo, sans-serif";
+        x.font=(imp.indexOf(wd.w)>=0?"900":weight)+" "+sizes[i]+"px "+fontFamily+", sans-serif";
         return x.measureText(wd.w).width;
       });
       lines=[];var cur=[],curW=0;
@@ -1282,7 +1282,7 @@ function drawCaptions(x,W,H,sc,t,st,alpha,idx){
         var scw=pop*(isCur?1.1:1)*(1-0.05*exitP);x.scale(scw,scw);
         var bl=(1-wp)*7*u+exitP*6*u;
         try{x.filter=bl>0.4?"blur("+bl.toFixed(1)+"px)":"none"}catch(e){}
-        x.font=(isImp||isCur?"900":weight)+" "+(sizes[wi]*(isCur?1.08:1))+"px Cairo, sans-serif";
+        x.font=(isImp||isCur?"900":weight)+" "+(sizes[wi]*(isCur?1.08:1))+"px "+fontFamily+", sans-serif";
         x.fillStyle=(isCur||isImp)?(st.accent||"#7545D6"):"#452C8C";
         x.textAlign="center";x.textBaseline="middle";
         x.fillText(wd.w,0,0);
