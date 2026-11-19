@@ -260,6 +260,38 @@ progress{width:100%;height:16px;accent-color:var(--purple)}
 @media(max-width:600px){.layer-track{grid-template-columns:70px minmax(0,1fr)}}
 body.auto-design #panel-design .field:not(:nth-of-type(1)):not(:nth-of-type(2)),body.auto-design #panel-design>.checkline,body.auto-design #panel-design>.hint{display:none}
 #advancedDesignBtn{margin:4px 0 12px}
+
+/* ===== Three focused workflow screens ===== */
+#showcase,#templates{display:none!important}
+.workflow-bar{display:flex;align-items:center;gap:14px;padding:18px 0 22px;max-width:760px;margin:0 auto}
+.workflow-track{display:flex;align-items:center;gap:8px;flex:1;direction:ltr}
+.workflow-dot{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:#eee9f7;color:#777;font-weight:900;border:2px solid #e5def2}
+.workflow-dot.active,.workflow-dot.done{background:var(--purple);border-color:var(--purple);color:#fff}
+.workflow-line{height:2px;background:var(--line);flex:1;min-width:12px}
+.workflow-label{font-weight:900;color:var(--purple-d);white-space:nowrap}
+body[data-stage="audio"] #panel-text,body[data-stage="audio"] #panel-design,body[data-stage="audio"] #panel-layers,body[data-stage="audio"] #panel-export,body[data-stage="audio"] .preview-col{display:none!important}
+body[data-stage="text"] #panel-audio,body[data-stage="text"] #panel-design,body[data-stage="text"] #panel-layers,body[data-stage="text"] #panel-export,body[data-stage="text"] .preview-col{display:none!important}
+body[data-stage="video"] .edit-col{display:none!important}
+body[data-stage="audio"] .studio-grid,body[data-stage="text"] .studio-grid{display:block;max-width:760px;margin:0 auto}
+body[data-stage="audio"] #panel-audio,body[data-stage="text"] #panel-text{min-height:340px;margin:0}
+body[data-stage="audio"] .studio-head,body[data-stage="text"] .studio-head,body[data-stage="video"] .studio-head{display:none}
+body[data-stage="video"] .studio-grid{display:block;max-width:860px;margin:0 auto}
+body[data-stage="video"] .preview-col{display:block!important;width:100%;position:static!important}
+body[data-stage="video"] .preview-box{max-width:520px;margin:0 auto 18px;padding:18px}
+body[data-stage="video"] .preview-box canvas{width:min(100%,340px);max-width:340px}
+body[data-stage="video"] .timeline{display:none}
+.video-stage-title{text-align:center;margin:6px 0 18px}
+.video-stage-title h2{margin:0;color:var(--purple-d);font-size:clamp(24px,5vw,34px);font-weight:900}
+.video-stage-title p{margin:4px 0;color:var(--gray);font-weight:600}
+body[data-stage="video"] #tplPick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 auto 18px;max-width:680px}
+body[data-stage="video"] #tplPick button{min-height:74px;border:2px solid var(--line);border-radius:14px;background:#fff;color:var(--purple-d);font-size:15px;font-weight:900;padding:12px}
+body[data-stage="video"] #tplPick button.sel{border-color:var(--purple);background:var(--soft);box-shadow:0 0 0 3px var(--soft2)}
+body[data-stage="video"] #panel-export{display:block!important;max-width:520px;margin:0 auto 30px}
+body[data-stage="video"] #panel-export>h2,body[data-stage="video"] #panel-export>.hint{display:none}
+body[data-stage="video"] #panel-export .field{margin-top:0}
+#goVideoBtn{margin-inline-start:auto}
+@media(max-width:600px){.workflow-bar{gap:8px;padding:12px 0 18px}.workflow-label{font-size:13px}.workflow-dot{width:28px;height:28px}.workflow-bar .btn{padding:7px 11px;font-size:13px}body[data-stage="video"] .preview-box{padding:10px}body[data-stage="video"] #tplPick{gap:8px}}
+
 </style>
 </head>
 <body class="auto-design">
@@ -338,6 +370,7 @@ body.auto-design #panel-design .field:not(:nth-of-type(1)):not(:nth-of-type(2)),
       <button class="btn btn-g btn-s" id="exportProjBtn">تنزيل نسخة المشروع (JSON)</button>
     </div>
 
+    <div class="workflow-bar" id="workflowBar"><button class="btn btn-g btn-s" id="stepBack" type="button">رجوع</button><div class="workflow-track"><span class="workflow-dot" data-step-dot="audio">1</span><span class="workflow-line"></span><span class="workflow-dot" data-step-dot="text">2</span><span class="workflow-line"></span><span class="workflow-dot" data-step-dot="video">3</span></div><div class="workflow-label" id="workflowLabel">إدراج الصوت</div><button class="btn btn-p btn-s" id="stepNext" type="button" disabled>التالي</button></div>
     <div class="studio-grid">
       <div class="edit-col">
 
@@ -389,6 +422,7 @@ body.auto-design #panel-design .field:not(:nth-of-type(1)):not(:nth-of-type(2)),
           <div id="sceneList" style="margin-top:14px"></div>
           <div class="btnrow">
             <button class="btn btn-o btn-s" id="addScene">+ إضافة مشهد فارغ</button>
+            <button class="btn btn-p" id="goVideoBtn" type="button" disabled>اعتماد النص والانتقال للفيديو</button>
           </div>
         </div>
 
@@ -465,6 +499,7 @@ body.auto-design #panel-design .field:not(:nth-of-type(1)):not(:nth-of-type(2)),
       </div>
 
       <div class="preview-col">
+        <div class="video-stage-title" id="videoStageTitle"><h2>فيديوك جاهز</h2><p>اختر القالب المناسب، وستتغير المعاينة فوراً.</p></div>
         <div class="preview-box">
           <canvas id="preview" width="540" height="960"></canvas>
           <div class="preview-ctl">
@@ -574,8 +609,9 @@ function openProject(p){
 }
 
 /* ============ Views ============ */
-function showStudio(){$("#view-home").style.display="none";$("#view-studio").style.display="block";window.scrollTo(0,0);drawPreview();playUi("whoosh")}
-function showHome(){$("#view-studio").style.display="none";$("#view-home").style.display="block";window.scrollTo(0,0);refreshProjects()}
+function setStage(stage){document.body.dataset.stage=stage;var labels={audio:"إدراج الصوت",text:"استخراج النص والتوقيت",video:"الفيديو والقوالب"};$("#workflowLabel").textContent=labels[stage];$("[data-step-dot]").forEach(function(d){var order={audio:1,text:2,video:3},n=order[d.dataset.stepDot],cur=order[stage];d.classList.toggle("active",n===cur);d.classList.toggle("done",n<cur)});$("#stepBack").style.visibility=stage==="audio"?"hidden":"visible";$("#stepNext").style.display=stage==="video"?"none":"inline-flex";$("#stepNext").disabled=stage==="audio"?!S.audioBlob:!(S.scenes&&S.scenes.length);window.scrollTo(0,0)}
+function showStudio(){$("#view-home").style.display="none";$("#view-studio").style.display="block";setStage("audio");drawPreview();playUi("whoosh")}
+function showHome(){document.body.removeAttribute("data-stage");$("#view-studio").style.display="none";$("#view-home").style.display="block";window.scrollTo(0,0);refreshProjects()}
 $("#logoHome").addEventListener("click",function(e){e.preventDefault();showHome()});
 $("#backHome").addEventListener("click",showHome);
 function newProject(template){
@@ -588,6 +624,9 @@ function newProject(template){
   clearAudioUI();hideMsg($("#textMsg"));syncSettingsUI();renderScenes();buildTimeline();showStudio();
 }
 $("#heroStart").addEventListener("click",function(){newProject("editorial")});
+$("#stepBack").addEventListener("click",function(){var st=document.body.dataset.stage;if(st==="video")setStage("text");else if(st==="text")setStage("audio")});
+$("#stepNext").addEventListener("click",function(){var st=document.body.dataset.stage;if(st==="audio"){if(S.audioBlob)setStage("text")}else if(st==="text"){if(S.scenes.length)setStage("video")}});
+$("#goVideoBtn").addEventListener("click",function(){if(S.scenes.length){setStage("video");drawPreview();saveProject(true)}});
 $("#saveBtn").addEventListener("click",function(){saveProject(false)});
 $("#exportProjBtn").addEventListener("click",function(){
   var data={name:$("#projName").value,settings:S.settings,scenes:S.scenes,transcript:$("#transcript").value,transcriptWords:S.transcriptWords,audioName:S.audioName,duration:S.duration,layers:S.layers.map(function(l){var c=Object.assign({},l);delete c.blob;return c})};
@@ -628,7 +667,7 @@ function decodeAudio(blob){
   var AC=window.AudioContext||window.webkitAudioContext;
   if(!actx)actx=new AC();
   blob.arrayBuffer().then(function(ab){return actx.decodeAudioData(ab.slice(0))}).then(function(buf){
-    audioBuf=buf;S.duration=buf.duration;
+    audioBuf=buf;S.duration=buf.duration;$("#stepNext").disabled=false;
     $("#fMeta").textContent="الحجم: "+fmtSize(blob.size)+" • المدة: "+fmtT(buf.duration)+" • "+Math.round(buf.sampleRate/1000)+"kHz";
     computePeaks(buf);analyzeSpeech(buf);drawWave(0);
     var qn=audioQualityNote(buf);
@@ -665,8 +704,7 @@ function handleFile(f){
   if(f.size>MAXMB*1048576){msg($("#audioMsg"),"err","الملف أكبر من الحد الأقصى ("+MAXMB+"MB). قلّص مدته أو ضغطه ثم أعد المحاولة.");return}
   S.transcriptWords=[];S.scenes=[];$("#transcript").value="";
   renderScenes();buildTimeline();
-  setAudioBlob(f,f.name,false);
-  setTimeout(function(){document.getElementById("panel-text").scrollIntoView({behavior:"smooth",block:"start"});},450);
+  setAudioBlob(f,f.name,false);$("#stepNext").disabled=true;
 }
 var dz=$("#dropZone"),fi=$("#fileInput");
 $("#pickBtn").addEventListener("click",function(){fi.click()});
@@ -750,7 +788,7 @@ async function approveAndSplitScenes(){
       msg($("#textMsg"),"warn","تم إنشاء مشاهد بتوقيتات تقديرية لأن التفريغ لم يوفر توقيتات كلمات. راجعها يدوياً قبل التصدير.");
     }
   }catch(error){msg($("#textMsg"),"err",(error.message||"تعذّر تقسيم المشاهد.")+" لم يُحذف النص أو الصوت؛ يمكنك إعادة المحاولة.")}
-  finally{btn.disabled=false;btn.textContent=original}
+  finally{btn.disabled=false;btn.textContent=original;$("#goVideoBtn").disabled=!S.scenes.length;$("#stepNext").disabled=!S.scenes.length}
 }
 $("#buildScenes").addEventListener("click",approveAndSplitScenes);
 /* Dictation (live mic recognition) */
@@ -781,7 +819,7 @@ $("#importText").addEventListener("change",function(){
   f.text().then(function(txt){
     if(/-->/.test(txt)){var sc=parseSRT(txt);if(sc.length){S.scenes=sc;renderScenes();buildTimeline();drawPreview();
       $("#transcript").value=sc.map(function(s){return s.text}).join("\n");
-      msg($("#textMsg"),"ok","استُوردت "+sc.length+" مشاهد بتوقيتاتها من ملف SRT.");return}}
+      msg($("#textMsg"),"ok","استُوردت "+sc.length+" مشاهد بتوقيتاتها من ملف SRT.");$("#goVideoBtn").disabled=false;$("#stepNext").disabled=false;return}}
     $("#transcript").value=txt.trim();msg($("#textMsg"),"info","استُورد النص. اضغط «تقسيم النص إلى مشاهد موقوتة» لبناء التوقيتات.");
   });
 });
@@ -814,7 +852,7 @@ async function transcribeWhisper(){
     S.scenes=[];renderScenes();buildTimeline();drawPreview();
     msg($("#textMsg"),S.transcriptWords.length?"ok":"warn","اكتمل التفريغ عبر "+(data.provider==="gemini"?"Gemini":"Groq (البديل التلقائي)")+". استخرجنا "+S.transcriptWords.length+" كلمة مع توقيتاتها. راجع النص وصحّح الأخطاء أولاً، ثم اضغط «اعتماد النص وتقسيمه إلى مشاهد».");
     status.textContent="اكتمل التفريغ. راجع النص قبل اعتماده.";
-    $("#transcript").focus();document.getElementById("panel-text").scrollIntoView({behavior:"smooth",block:"start"});
+    $("#transcript").focus();$("#stepNext").disabled=true;
     playUi("success");
   }catch(err){
     var reason=err&&err.name==="AbortError"?"انتهت مهلة المعالجة. جرّب ملفاً أقصر أو أعد المحاولة.":((err&&err.message)||"تعذّر الاتصال بخادم التفريغ.");
@@ -826,6 +864,7 @@ async function transcribeWhisper(){
   }
 }
 $("#whisperBtn").addEventListener("click",function(){transcribeWhisper()});
+$("#transcript").addEventListener("input",function(){$("#goVideoBtn").disabled=true});
 
 /* ============ UI sounds (synthesized, quiet, optional) ============ */
 var uiCtx=null;
@@ -1080,6 +1119,8 @@ function syncSettingsUI(){
 }
 (function buildSettings(){
   var pick=$("#tplPick");
+  var tplField=pick.parentElement;$("#preview").closest(".preview-box").appendChild(tplField);tplField.style.marginTop="18px";tplField.querySelector("label").textContent="اختر قالب الفيديو";
+  $("#preview").closest(".preview-col").appendChild($("#panel-export"));
   Object.keys(TEMPLATES).forEach(function(k){
     var b=document.createElement("button");b.type="button";b.dataset.t=k;b.textContent=TEMPLATES[k].ar;
     b.addEventListener("click",function(){S.settings.template=k;S.settings.capMode=TEMPLATES[k].mode;S.settings.theme=TEMPLATES[k].theme;S.settings.accent=THEMES[TEMPLATES[k].theme].accent;syncSettingsUI();drawPreview();saveProject(true)});
@@ -1686,6 +1727,7 @@ async function _startExport(){
 }
 
 /* init */
+setStage("audio");
 drawPreview();
 refreshProjects();
 </script>
