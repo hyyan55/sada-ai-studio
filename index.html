@@ -883,38 +883,46 @@ function playSceneSfx(i){
     src.start(actx.currentTime+(sc.sfxDelay||0));
   }).catch(function(){});
 }
-/* إعادة تفريغ مقطع واحد فقط من الصوت، دون المساس ببقية المشاهد */
+/* ترميز مقطع صوتي قصير إلى WAV لإعادة تفريغه عبر خادم صَدَى */
+function audioBufferToWavBlob(buffer){
+  var samples=buffer.getChannelData(0),bytes=44+samples.length*2,ab=new ArrayBuffer(bytes),v=new DataView(ab);
+  function str(o,s){for(var i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))}
+  str(0,"RIFF");v.setUint32(4,36+samples.length*2,true);str(8,"WAVE");str(12,"fmt ");
+  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,buffer.sampleRate,true);v.setUint32(28,buffer.sampleRate*2,true);
+  v.setUint16(32,2,true);v.setUint16(34,16,true);str(36,"data");v.setUint32(40,samples.length*2,true);
+  for(var i=0;i<samples.length;i++){var x=Math.max(-1,Math.min(1,samples[i]));v.setInt16(44+i*2,x<0?x*32768:x*32767,true)}
+  return new Blob([ab],{type:"audio/wav"});
+}
+/* إعادة تفريغ مقطع واحد من الصوت عبر Gemini ثم Groq، دون المساس ببقية المشاهد */
 async function retranscribeScene(i){
   var sc=S.scenes[i];if(!sc)return;
   if(!audioBuf||!actx){showToast("ارفع الصوت أولاً حتى يمكن إعادة تفريغ المقطع منه","err");return}
   showToast("جارٍ إعادة تفريغ المشهد "+(i+1)+" وحده…");
   try{
-    if(!whisperPipe){await downloadLibrary();if(!whisperPipe)throw new Error("lib")}
-    var sr=audioBuf.sampleRate;
-    var s0=Math.max(0,sc.start-0.25),e0=Math.min(audioBuf.duration,sc.end+0.25);
+    var sr=audioBuf.sampleRate,s0=Math.max(0,sc.start-0.25),e0=Math.min(audioBuf.duration,sc.end+0.25);
     var len=Math.max(1,Math.floor((e0-s0)*sr)),off=Math.floor(s0*sr);
-    var sub=actx.createBuffer(1,len,sr),out=sub.getChannelData(0);
-    var chans=[];for(var c=0;c<audioBuf.numberOfChannels;c++)chans.push(audioBuf.getChannelData(c));
+    var sub=actx.createBuffer(1,len,sr),out=sub.getChannelData(0),chans=[];
+    for(var c=0;c<audioBuf.numberOfChannels;c++)chans.push(audioBuf.getChannelData(c));
     for(var j=0;j<len;j++){var v=0;for(var c2=0;c2<chans.length;c2++)v+=chans[c2][off+j]||0;out[j]=v/chans.length}
-    var a16=await resample16k(sub);
-    var res=await whisperPipe(a16,{language:"arabic",task:"transcribe",return_timestamps:"word",chunk_length_s:30,stride_length_s:5});
-    var txt=(res&&res.text?res.text:"").trim();
-    if(!txt)throw new Error("empty");
-    var words=[];
-    (res.chunks||[]).forEach(function(ch){
-      var wtxt=(ch.text||"").trim();if(!wtxt)return;
+    var wav=audioBufferToWavBlob(sub),form=new FormData();
+    form.append("audio",wav,"sada-scene.wav");form.append("duration",String(e0-s0));
+    var response=await fetch(SADA_API_URL.replace(/\/$/,"")+"/api/transcribe",{method:"POST",body:form});
+    var data={};try{data=await response.json()}catch(e){}
+    if(!response.ok)throw new Error(data.error||"transcription failed");
+    var adjusted=(data.chunks||[]).map(function(ch){
       var ts=ch.timestamp||[0,0];
-      var ws=(typeof ts[0]==="number"?ts[0]:0)+s0,we=(typeof ts[1]==="number"?ts[1]:ws+0.2)+s0;
-      var pr=wtxt.split(/\s+/).filter(Boolean);
-      var tot=pr.reduce(function(a,w){return a+w.length+1},0)||1,acc=ws;
-      pr.forEach(function(w){var d=(we-ws)*((w.length+1)/tot);words.push({w:w,s:Math.round(acc*100)/100,e:Math.round(Math.max(acc+0.08,acc+d)*100)/100});acc+=d});
+      return {text:ch.text,timestamp:[(Number(ts[0])||0)+s0,(Number(ts[1])||0)+s0]};
     });
-    S.scenes[i].text=txt;if(words.length)S.scenes[i].words=words;
+    var built=scenesFromChunks(adjusted),words=[];
+    built.forEach(function(part){(part.words||[]).forEach(function(w){words.push(w)})});
+    S.scenes[i].text=(data.text||"").trim()||S.scenes[i].text;
+    if(words.length)S.scenes[i].words=words;else delete S.scenes[i].words;
     renderScenes();drawPreview();playUi("success");
-    showToast("أُعيد تفريغ المشهد "+(i+1)+" — راجع نصه الجديد وصحّحه إن لزم");
+    showToast("أُعيد تفريغ المشهد "+(i+1)+" عبر "+(data.provider==="gemini"?"Gemini":"Groq")+" — راجع النص الجديد");
   }catch(e){
     playUi("error");
-    showToast("تعذّرت إعادة تفريغ هذا المقطع — تأكد أن المكتبة جاهزة ثم حاول مجدداً","err");
+    showToast((e&&e.message)||"تعذّرت إعادة تفريغ هذا المقطع — أعد المحاولة لاحقاً","err");
   }
 }
 
