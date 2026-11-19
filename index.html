@@ -1364,7 +1364,13 @@ function renderLayers(){
 }
 function buildLayerTracks(){var box=$("#layerTracks");if(!box)return;box.innerHTML="";if(!S.duration)return;
   S.layers.forEach(function(l){var row=document.createElement("div");row.className="layer-track";var b=document.createElement("b");b.textContent=(l.type==="image"?"صورة":l.type==="audio"?"صوت":"نص")+" · "+l.name;
-    var rail=document.createElement("div");rail.className="layer-track-rail";var bar=document.createElement("div");bar.className="layer-track-bar";bar.style.insetInlineStart=(Math.max(0,l.start)/S.duration*100)+"%";bar.style.width=(Math.max(.5,(l.end-l.start)/S.duration*100))+"%";rail.appendChild(bar);row.append(b,rail);box.appendChild(row)});
+    var rail=document.createElement("div");rail.className="layer-track-rail";var bar=document.createElement("div");bar.className="layer-track-bar";bar.style.insetInlineStart=(Math.max(0,l.start)/S.duration*100)+"%";bar.style.width=(Math.max(.5,(l.end-l.start)/S.duration*100))+"%";rail.appendChild(bar);
+    bar.style.cursor="grab";bar.style.touchAction="none";
+    bar.addEventListener("pointerdown",function(ev){ev.preventDefault();var x0=ev.clientX,w=Math.max(1,rail.getBoundingClientRect().width),s0=l.start,e0=l.end,span=e0-s0;bar.setPointerCapture(ev.pointerId);
+      bar.onpointermove=function(move){var delta=(x0-move.clientX)/w*S.duration;l.start=Math.max(0,Math.min(S.duration-span,s0+delta));l.end=l.start+span;bar.style.insetInlineStart=(l.start/S.duration*100)+"%";};
+      bar.onpointerup=function(){bar.onpointermove=null;bar.onpointerup=null;renderLayers();drawPreview();saveProject(true);};
+    });
+    row.append(b,rail);box.appendChild(row)});
 }
 function addLayerFile(file,type){var id=uid(),l={id:id,type:type,name:file.name||type,blob:file,start:0,end:S.duration||5,volume:.8,x:.5,y:.5,scale:.72,text:""};S.layers.push(l);var u=URL.createObjectURL(file);S.layerUrls[id]=u;
   if(type==="image"){var im=new Image();im.onload=drawPreview;im.src=u;S.layerBuffers[id]=im}
@@ -1451,7 +1457,7 @@ var ffmpegInstance=null,ffmpegProgressHandler=null;
 (function exportSupport(){
   var hasMR=!!window.MediaRecorder;
   var mp4=hasMR&&MediaRecorder.isTypeSupported("video/mp4");
-  $("#exportSupport").textContent=!hasMR?
+  $("#exportSupport").textContent="خيارات التصدير: 720p و1080p و2K و4K (2160×3840). دقة 2K/4K تحتاج جهازاً وذاكرة قويين، وقد لا تعمل على بعض الهواتف. "+(!hasMR?
     "متصفحك لا يدعم التسجيل داخل الصفحة أصلاً — جرّب Chrome أو Edge للتصدير.":
     mp4?
     "الناتج النهائي MP4 دائماً: متصفحك يسجّل MP4/H.264 مباشرة، وسيُسلَّم ملف MP4 بالصوت والحركة والنصوص. التصدير يتم بالزمن الحقيقي: فيديو من دقيقة يُصدَّر في دقيقة.":
