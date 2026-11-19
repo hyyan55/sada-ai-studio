@@ -1365,6 +1365,7 @@ function drawCaptions(x,W,H,sc,t,st,alpha,idx){
 
 function drawFrame(x,W,H,t,st,scenes,peaks,dur){
   var tpl=st.template||"geo";
+  var palette=THEMES[st.theme]||THEMES.white;
   var time=t*(st.speed||1)*(tpl==="geoCalm"?0.55:1);
   var amp=(peaks&&peaks.length&&dur)?(peaks[Math.min(peaks.length-1,Math.floor(t/dur*peaks.length))]||0.2):0.25;
   geoBackground(x,W,H,time,amp,st);
