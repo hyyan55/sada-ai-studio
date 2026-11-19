@@ -275,7 +275,6 @@ body.auto-design #panel-design .field:not(:nth-of-type(1)):not(:nth-of-type(2)),
       <a href="#steps">كيف يعمل؟</a>
       <a href="#projects">مشاريعي</a>
     </nav>
-    <button class="btn btn-p btn-s" id="navNew">+ مشروع جديد</button>
   </div>
 </header>
 
@@ -294,11 +293,12 @@ body.auto-design #panel-design .field:not(:nth-of-type(1)):not(:nth-of-type(2)),
     </div>
 
     <div class="showcase" id="showcase" aria-label="معاينة حية للقوالب">
-      <div class="phone"><canvas width="270" height="480" data-demo="geo"></canvas><span>معاينة قالب: الهندسية الفاتحة</span></div>
-      <div class="phone"><canvas width="270" height="480" data-demo="geoWords"></canvas><span>معاينة قالب: كلمات متحركة</span></div>
-      <div class="phone"><canvas width="270" height="480" data-demo="geoWave"></canvas><span>معاينة قالب: هندسية + موجة</span></div>
+      <div class="phone"><canvas width="270" height="480" data-demo="cinema"></canvas><span>سينمائي داكن</span></div>
+      <div class="phone"><canvas width="270" height="480" data-demo="editorial"></canvas><span>تحريري فاخر</span></div>
+      <div class="phone"><canvas width="270" height="480" data-demo="kinetic"></canvas><span>حركي جريء</span></div>
+      <div class="phone"><canvas width="270" height="480" data-demo="neon"></canvas><span>نيون صوتي</span></div>
     </div>
-    <p style="text-align:center;color:var(--gray);font-size:13px;margin:4px 0 0">هذه معاينات حية مرسومة بنفس محرك القوالب داخل المحرر — جرّبها فعلياً بصوتك من زر «ابدأ الآن».</p>
+    <p style="text-align:center;color:var(--gray);font-size:13px;margin:4px 0 0">هذه معاينات حية للأنظمة الأربعة؛ اضغط على أي نموذج في قسم القوالب لبدء مشروع به مباشرة.</p>
 
     <section class="block" id="steps">
       <h2>كيف يعمل صَدَى؟</h2>
@@ -332,7 +332,7 @@ body.auto-design #panel-design .field:not(:nth-of-type(1)):not(:nth-of-type(2)),
   <div class="wrap">
     <div class="studio-head">
       <button class="btn btn-g btn-s" id="backHome">→ الرئيسية</button>
-      <input type="text" name="projname" id="projName" value="مشروع بدون عنوان" aria-label="اسم المشروع">
+      <input type="text" name="projname" id="projName" value="" placeholder="اسم المشروع (اختياري)" aria-label="اسم المشروع">
       <span class="save-state" id="saveState"></span>
       <button class="btn btn-o btn-s" id="saveBtn">حفظ المشروع</button>
       <button class="btn btn-g btn-s" id="exportProjBtn">تنزيل نسخة المشروع (JSON)</button>
@@ -577,12 +577,11 @@ $("#logoHome").addEventListener("click",function(e){e.preventDefault();showHome(
 $("#backHome").addEventListener("click",showHome);
 function newProject(template){
   audioEl.pause();if(typeof stopLayerPreview==="function")stopLayerPreview();
-  S.projectId=null;S.scenes=[];S.transcriptWords=[];S.duration=0;S.audioBlob=null;S.audioName="";S.layers=[];revokeLayerUrls();renderLayers();
-  S.settings.template=template||"geo";
-  $("#projName").value="مشروع جديد";$("#transcript").value="";$("#saveState").textContent="";
+  S.projectId=null;S.playing=false;lastPvScene=-1;S.scenes=[];S.transcriptWords=[];S.duration=0;S.audioBlob=null;S.audioName="";S.layers=[];revokeLayerUrls();renderLayers();
+  S.settings.template=template||"editorial";
+  $("#projName").value="";$("#transcript").value="";$("#saveState").textContent="";
   clearAudioUI();hideMsg($("#textMsg"));syncSettingsUI();renderScenes();buildTimeline();showStudio();
 }
-$("#navNew").addEventListener("click",function(){newProject("editorial")});
 $("#heroStart").addEventListener("click",function(){newProject("editorial")});
 $("#saveBtn").addEventListener("click",function(){saveProject(false)});
 $("#exportProjBtn").addEventListener("click",function(){
@@ -1474,7 +1473,7 @@ var ffmpegInstance=null,ffmpegProgressHandler=null;
     "متصفحك لا يدعم التسجيل داخل الصفحة أصلاً — جرّب Chrome أو Edge للتصدير.":
     mp4?
     "الناتج النهائي MP4 دائماً: متصفحك يسجّل MP4/H.264 مباشرة، وسيُسلَّم ملف MP4 بالصوت والحركة والنصوص. التصدير يتم بالزمن الحقيقي: فيديو من دقيقة يُصدَّر في دقيقة.":
-    "الناتج النهائي MP4 دائماً: متصفحك لا يسجّل MP4 مباشرة، لذا سيُصيَّر الفيديو أولاً ثم يُحوَّل محلياً داخل متصفحك إلى MP4/H.264 + AAC عبر FFmpeg.wasm — ولن يُسلَّم WebM أبداً كبديل. سترى حالة التحويل ونسبته خطوة بخطوة، وإن فشل التحويل لضغط الذاكرة يمكنك إعادة محاولته دون إعادة التصيير. التصدير والتحويل بالزمن الحقيقي تقريباً وقد يستغرقان وقتاً إضافياً على الهواتف.";
+    "الناتج النهائي MP4 دائماً: متصفحك لا يسجّل MP4 مباشرة، لذا سيُصيَّر الفيديو أولاً ثم يُحوَّل محلياً داخل متصفحك إلى MP4/H.264 + AAC عبر FFmpeg.wasm — ولن يُسلَّم WebM أبداً كبديل. سترى حالة التحويل ونسبته خطوة بخطوة، وإن فشل التحويل لضغط الذاكرة يمكنك إعادة محاولته دون إعادة التصيير. التصدير والتحويل بالزمن الحقيقي تقريباً وقد يستغرقان وقتاً إضافياً على الهواتف.");
 })();
 /* --- FFmpeg.wasm (v0.11 classic build, single-thread core: no SharedArrayBuffer needed) --- */
 function loadFFmpegScript(){
