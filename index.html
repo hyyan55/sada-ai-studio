@@ -526,7 +526,7 @@ function refreshProjects(){
       var b1=document.createElement("button");b1.className="btn btn-p btn-s";b1.textContent="فتح";
       b1.onclick=function(){openProject(p)};
       var b2=document.createElement("button");b2.className="btn btn-g btn-s";b2.textContent="تكرار";
-      b2.onclick=function(){var c=JSON.parse(JSON.stringify({name:p.name+" — نسخة",settings:p.settings,scenes:p.scenes,transcript:p.transcript,duration:p.duration}));c.id=uid();c.updatedAt=Date.now();c.audioBlob=p.audioBlob;c.audioName=p.audioName;idbTx("readwrite",function(st){st.put(c)}).then(refreshProjects)};
+      b2.onclick=function(){var c=JSON.parse(JSON.stringify({name:p.name+" — نسخة",settings:p.settings,scenes:p.scenes,transcript:p.transcript,transcriptWords:p.transcriptWords||[],duration:p.duration}));c.id=uid();c.updatedAt=Date.now();c.audioBlob=p.audioBlob;c.audioName=p.audioName;idbTx("readwrite",function(st){st.put(c)}).then(refreshProjects)};
       var b3=document.createElement("button");b3.className="btn btn-g btn-s";b3.textContent="حذف";
       b3.onclick=function(){
         if(b3.dataset.arm){idbTx("readwrite",function(st){st.delete(p.id)}).then(refreshProjects)}
@@ -560,7 +560,7 @@ $("#navNew").addEventListener("click",function(){newProject("geo")});
 $("#heroStart").addEventListener("click",function(){newProject("geo")});
 $("#saveBtn").addEventListener("click",function(){saveProject(false)});
 $("#exportProjBtn").addEventListener("click",function(){
-  var data={name:$("#projName").value,settings:S.settings,scenes:S.scenes,transcript:$("#transcript").value,audioName:S.audioName,duration:S.duration};
+  var data={name:$("#projName").value,settings:S.settings,scenes:S.scenes,transcript:$("#transcript").value,transcriptWords:S.transcriptWords,audioName:S.audioName,duration:S.duration};
   var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));
   a.download="sada-project.json";a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},4000);
 });
