@@ -746,7 +746,7 @@ $("#importText").addEventListener("change",function(){
 });
 
 /* ============ Server transcription: Gemini primary, Groq fallback ============ */
-var SADA_API_URL="https://sada-ai-api.onrender.com";
+var SADA_API_URL=""; // Same-origin: frontend and API share one Render Web Service.
 async function transcribeWhisper(){
   var btn=$("#whisperBtn"),prog=$("#whisperProg"),bar=$("#whisperBar"),status=$("#whisperStatus");
   if(!S.audioBlob||!audioBuf){msg($("#textMsg"),"warn","ارفع ملفاً صوتياً صالحاً أولاً، ثم جرّب التفريغ.");return}
