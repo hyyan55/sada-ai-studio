@@ -326,7 +326,7 @@ progress{width:100%;height:16px;accent-color:var(--purple)}
 
         <div class="panel" id="panel-audio">
           <h2><span class="st">1</span>الصوت</h2>
-          <p class="hint">الحد الأقصى للحجم 50MB. الصيغ المدعومة: MP3، WAV، M4A، AAC، OGG. لن تبدأ أي معالجة قبل التأكد أن الملف يُشغَّل ويُفكّ ترميزه بنجاح.</p>
+          <p class="hint">الحد الأقصى للحجم 24MB. الصيغ المدعومة: MP3، WAV، M4A، AAC، OGG. بعد التحقق من الملف سينتقل بك صَدَى تلقائياً إلى خطوة التفريغ.</p>
           <div class="drop" id="dropZone">
             <div style="font-size:30px" aria-hidden="true">🎙️</div>
             <div>اسحب ملفك الصوتي هنا أو</div>
@@ -350,7 +350,7 @@ progress{width:100%;height:16px;accent-color:var(--purple)}
 
         <div class="panel" id="panel-text">
           <h2><span class="st">2</span>النص والمشاهد</h2>
-          <p class="hint">ارفع صوتك ثم اضغط التفريغ التلقائي. يعمل صَدَى على خادم آمن: Gemini أولاً، ثم Groq تلقائياً عند تعذّر Gemini. لا تحتاج إلى حساب أو مفتاح API.</p>
+          <p class="hint">ارفع الصوت، استخرج النص وتوقيت كل كلمة، راجعه وصححه، ثم اعتمده ليقسّمه صَدَى إلى مشاهد تراعي المعنى والإيقاع.</p>
           <div class="whisper-box">
             <label>التفريغ التلقائي الذكي</label>
             <div class="whisper-row">
@@ -364,7 +364,7 @@ progress{width:100%;height:16px;accent-color:var(--purple)}
           </div>
           <textarea class="ta" id="transcript" rows="5" placeholder="سيظهر هنا النص المفرَّغ من صوتك — أو الصق هنا نص ما قلته، جملة في كل سطر أو مفصولاً بعلامات الترقيم…"></textarea>
           <div class="btnrow">
-            <button class="btn btn-p btn-s" id="buildScenes">تقسيم النص إلى مشاهد موقوتة</button>
+            <button class="btn btn-p btn-s" id="buildScenes">اعتماد النص وتقسيمه إلى مشاهد</button>
             <button class="btn btn-g btn-s" id="dictateBtn">🎤 إملاء صوتي</button>
             <label class="btn btn-g btn-s" style="cursor:pointer">استيراد SRT / TXT<input type="file" id="importText" accept=".srt,.txt" class="hidden"></label>
           </div>
@@ -482,7 +482,8 @@ var S={
   projectId:null,
   audioBlob:null,audioName:"",audioUrl:null,duration:0,
   peaks:[],speechSegs:[],
-  scenes:[], /* {text,start,end} */
+  scenes:[], /* {text,start,end,words} */
+  transcriptWords:[],
   settings:{template:"geo",capMode:"smart",accent:"#7545D6",fontSize:64,textPos:"center",account:"",speed:1,density:26,showWave:true,lineHeight:1.55,textWidth:88,textHeight:42,fontWeight:800,enterDur:0.14,exitDur:0.15,uiSound:true,uiVol:0.5,sfxVol:0.6},
   playing:false
 };
@@ -505,7 +506,7 @@ function idbTx(mode,fn){return idb().then(function(db){return new Promise(functi
 function saveProject(silent){
   var rec={id:S.projectId||uid(),name:$("#projName").value||"مشروع بدون عنوان",updatedAt:Date.now(),
     settings:JSON.parse(JSON.stringify(S.settings)),scenes:S.scenes,transcript:$("#transcript").value,
-    audioBlob:S.audioBlob,audioName:S.audioName,duration:S.duration};
+    transcriptWords:S.transcriptWords,audioBlob:S.audioBlob,audioName:S.audioName,duration:S.duration};
   S.projectId=rec.id;
   return idbTx("readwrite",function(st){st.put(rec)}).then(function(){
     $("#saveState").textContent="حُفظ "+new Date().toLocaleTimeString("ar");
@@ -537,7 +538,7 @@ function refreshProjects(){
   });
 }
 function openProject(p){
-  S.projectId=p.id;S.scenes=p.scenes||[];S.settings=Object.assign({},S.settings,p.settings||{});
+  S.projectId=p.id;S.scenes=p.scenes||[];S.transcriptWords=p.transcriptWords||[];S.settings=Object.assign({},S.settings,p.settings||{});
   S.duration=p.duration||0;$("#projName").value=p.name;$("#transcript").value=p.transcript||"";
   if(p.audioBlob){setAudioBlob(p.audioBlob,p.audioName||"audio",true)}else{clearAudioUI()}
   syncSettingsUI();renderScenes();buildTimeline();showStudio();drawPreview();
@@ -550,7 +551,7 @@ function showHome(){$("#view-studio").style.display="none";$("#view-home").style
 $("#logoHome").addEventListener("click",function(e){e.preventDefault();showHome()});
 $("#backHome").addEventListener("click",showHome);
 function newProject(template){
-  S.projectId=null;S.scenes=[];S.duration=0;S.audioBlob=null;S.audioName="";
+  S.projectId=null;S.scenes=[];S.transcriptWords=[];S.duration=0;S.audioBlob=null;S.audioName="";
   S.settings.template=template||"geo";
   $("#projName").value="مشروع جديد";$("#transcript").value="";$("#saveState").textContent="";
   clearAudioUI();hideMsg($("#textMsg"));syncSettingsUI();renderScenes();buildTimeline();showStudio();
@@ -632,6 +633,7 @@ function handleFile(f){
   if(!okTypes.includes(f.type)&&!okExt){msg($("#audioMsg"),"err","صيغة غير مدعومة. الصيغ المقبولة: MP3، WAV، M4A، AAC، OGG.");return}
   if(f.size>MAXMB*1048576){msg($("#audioMsg"),"err","الملف أكبر من الحد الأقصى ("+MAXMB+"MB). قلّص مدته أو ضغطه ثم أعد المحاولة.");return}
   setAudioBlob(f,f.name,false);
+  setTimeout(function(){document.getElementById("panel-text").scrollIntoView({behavior:"smooth",block:"start"});},450);
 }
 var dz=$("#dropZone"),fi=$("#fileInput");
 $("#pickBtn").addEventListener("click",function(){fi.click()});
@@ -639,7 +641,7 @@ fi.addEventListener("change",function(){handleFile(fi.files[0]);fi.value=""});
 ["dragenter","dragover"].forEach(function(ev){dz.addEventListener(ev,function(e){e.preventDefault();dz.classList.add("drag")})});
 ["dragleave","drop"].forEach(function(ev){dz.addEventListener(ev,function(e){e.preventDefault();dz.classList.remove("drag")})});
 dz.addEventListener("drop",function(e){var f=e.dataTransfer.files&&e.dataTransfer.files[0];handleFile(f)});
-$("#removeAudio").addEventListener("click",function(){audioEl.pause();S.audioBlob=null;S.audioName="";S.duration=0;S.scenes=[];clearAudioUI();renderScenes();buildTimeline();drawPreview()});
+$("#removeAudio").addEventListener("click",function(){audioEl.pause();S.audioBlob=null;S.audioName="";S.duration=0;S.scenes=[];S.transcriptWords=[];clearAudioUI();renderScenes();buildTimeline();drawPreview()});
 
 /* waveform */
 function drawWave(t){
@@ -680,34 +682,33 @@ function importantWords(text){
   var ws=text.split(/\s+/).filter(Boolean);
   return ws.filter(function(w){return w.replace(/[^\p{L}]/gu,"").length>=5}).slice(0,3);
 }
-$("#buildScenes").addEventListener("click",function(){
+async function approveAndSplitScenes(){
   var text=$("#transcript").value.trim();
-  if(!text){msg($("#textMsg"),"warn","أدخل النص أولاً — الصق نص كلامك في المربع أعلاه.");return}
-  if(!S.duration){msg($("#textMsg"),"warn","ارفع الملف الصوتي أولاً حتى تُبنى التوقيتات على مدته الحقيقية ومواضع الصمت فيه.");return}
-  var sents=splitSentences(text);
-  /* total speech time from real segments */
-  var totalSpeech=S.speechSegs.reduce(function(a,s){return a+(s.end-s.start)},0)||S.duration;
-  var weights=sents.map(function(s){return Math.max(1,s.split(/\s+/).length)});
-  var wsum=weights.reduce(function(a,b){return a+b},0);
-  var scenes=[],cursor=0,segIdx=0,segOff=S.speechSegs.length?S.speechSegs[0].start:0;
-  /* walk through real speech segments allocating proportional durations */
-  var remain=totalSpeech;
-  sents.forEach(function(s,i){
-    var dur=totalSpeech*(weights[i]/wsum);
-    var start=mapSpeechTime(cursor),end=mapSpeechTime(Math.min(totalSpeech,cursor+dur));
-    if(i===sents.length-1)end=S.speechSegs.length?S.speechSegs[S.speechSegs.length-1].end:S.duration;
-    scenes.push({text:s,start:Math.round(start*100)/100,end:Math.round(Math.max(end,start+0.4)*100)/100});
-    cursor+=dur;
-  });
-  function mapSpeechTime(off){
-    var acc=0;for(var k=0;k<S.speechSegs.length;k++){var sg=S.speechSegs[k],len=sg.end-sg.start;
-      if(off<=acc+len)return sg.start+(off-acc);acc+=len}
-    return S.duration;
-  }
-  S.scenes=scenes;renderScenes();buildTimeline();drawPreview();
-  playUi("pop");
-  msg($("#textMsg"),"ok","بُنيت "+scenes.length+" مشاهد. التوقيتات موزعة على مقاطع الكلام الفعلية في تسجيلك ("+S.speechSegs.length+" مقطعاً) — راجعها وعدّل أي توقيت من بطاقات المشاهد بالأسفل قبل التصدير.");
-});
+  if(!text){msg($("#textMsg"),"warn","راجع النص أو الصقه أولاً قبل اعتماده.");return}
+  if(!S.duration){msg($("#textMsg"),"warn","ارفع الملف الصوتي أولاً حتى ترتبط المشاهد بتوقيتاته.");return}
+  var btn=$("#buildScenes"),original=btn.textContent;
+  btn.disabled=true;btn.textContent="جارٍ اعتماد النص وتقسيم المشاهد…";
+  try{
+    if(S.transcriptWords&&S.transcriptWords.length){
+      var response=await fetch(SADA_API_URL+"/api/split-scenes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({transcript:text,words:S.transcriptWords})});
+      var data={};try{data=await response.json()}catch(e){}
+      if(!response.ok)throw new Error(data.error||"تعذّر تقسيم المشاهد.");
+      S.scenes=data.scenes||[];
+      if(!S.scenes.length)throw new Error("لم ينتج التقسيم أي مشاهد.");
+      renderScenes();buildTimeline();drawPreview();playUi("success");
+      msg($("#textMsg"),"ok","تم اعتماد النص وإنشاء "+S.scenes.length+" مشهداً "+(data.provider==="gemini"?"بتحليل Gemini للمعنى":"بتقسيم محلي احتياطي")+". راجع حدود المشاهد وتوقيتاتها قبل الانتقال للتصميم.");
+    }else{
+      var sentences=splitSentences(text),speech=S.speechSegs.length?S.speechSegs:[{start:0,end:S.duration}];
+      var total=speech.reduce(function(a,x){return a+x.end-x.start},0)||S.duration,allWords=text.split(/\s+/).filter(Boolean),cursor=0,scenes=[];
+      function atTime(off){var elapsed=0;for(var k=0;k<speech.length;k++){var seg=speech[k],len=seg.end-seg.start;if(off<=elapsed+len)return seg.start+off-elapsed;elapsed+=len}return S.duration}
+      sentences.forEach(function(sentence,i){var count=sentence.split(/\s+/).filter(Boolean).length,d=total*count/Math.max(1,allWords.length),st=atTime(cursor),en=atTime(cursor+d);if(i===sentences.length-1)en=S.duration;scenes.push({text:sentence,start:st,end:Math.max(st+0.2,en)});cursor+=d});
+      S.scenes=scenes;renderScenes();buildTimeline();drawPreview();
+      msg($("#textMsg"),"warn","تم إنشاء مشاهد بتوقيتات تقديرية لأن التفريغ لم يوفر توقيتات كلمات. راجعها يدوياً قبل التصدير.");
+    }
+  }catch(error){msg($("#textMsg"),"err",(error.message||"تعذّر تقسيم المشاهد.")+" لم يُحذف النص أو الصوت؛ يمكنك إعادة المحاولة.")}
+  finally{btn.disabled=false;btn.textContent=original}
+}
+$("#buildScenes").addEventListener("click",approveAndSplitScenes);
 /* Dictation (live mic recognition) */
 var recog=null;
 $("#dictateBtn").addEventListener("click",function(){
@@ -765,17 +766,11 @@ async function transcribeWhisper(){
     var text=(data.text||"").trim();
     if(!text)throw new Error("لم يُستخرج كلام واضح من التسجيل.");
     $("#transcript").value=text;
-    var chunks=Array.isArray(data.chunks)?data.chunks:[];
-    var built=scenesFromChunks(chunks);
-    if(built.length){
-      S.scenes=built;renderScenes();buildTimeline();drawPreview();
-      var exactCount=built.reduce(function(n,sc){return n+sc.words.filter(function(w){return !w.estimated}).length},0);
-      var estimatedCount=built.reduce(function(n,sc){return n+sc.words.filter(function(w){return w.estimated}).length},0);
-      msg($("#textMsg"),"ok","اكتمل التفريغ عبر "+(data.provider==="gemini"?"Gemini":"Groq (البديل التلقائي)")+" وبُني "+built.length+" مشهداً. توقيتات الكلمات: "+exactCount+" دقيقة من النموذج، و"+estimatedCount+" مقدّرة ومحسّنة صوتياً. راجع النص والتوقيتات قبل التصدير.");
-    }else{
-      msg($("#textMsg"),"warn","اكتمل استخراج النص عبر "+(data.provider==="gemini"?"Gemini":"Groq")+", لكن الخدمة لم تُرجع توقيتات كلمات لهذا الملف. استخدم «تقسيم النص إلى مشاهد موقوتة» لبناء توقيتات تقديرية من الصوت.");
-    }
-    status.textContent="اكتمل التفريغ بنجاح.";
+    S.transcriptWords=Array.isArray(data.words)?data.words:[];
+    S.scenes=[];renderScenes();buildTimeline();drawPreview();
+    msg($("#textMsg"),S.transcriptWords.length?"ok":"warn","اكتمل التفريغ عبر "+(data.provider==="gemini"?"Gemini":"Groq (البديل التلقائي)")+". استخرجنا "+S.transcriptWords.length+" كلمة مع توقيتاتها. راجع النص وصحّح الأخطاء أولاً، ثم اضغط «اعتماد النص وتقسيمه إلى مشاهد».");
+    status.textContent="اكتمل التفريغ. راجع النص قبل اعتماده.";
+    $("#transcript").focus();document.getElementById("panel-text").scrollIntoView({behavior:"smooth",block:"start"});
     playUi("success");
   }catch(err){
     var reason=err&&err.name==="AbortError"?"انتهت مهلة المعالجة. جرّب ملفاً أقصر أو أعد المحاولة.":((err&&err.message)||"تعذّر الاتصال بخادم التفريغ.");
@@ -910,12 +905,7 @@ async function retranscribeScene(i){
     var response=await fetch(SADA_API_URL.replace(/\/$/,"")+"/api/transcribe",{method:"POST",body:form});
     var data={};try{data=await response.json()}catch(e){}
     if(!response.ok)throw new Error(data.error||"transcription failed");
-    var adjusted=(data.chunks||[]).map(function(ch){
-      var ts=ch.timestamp||[0,0];
-      return {text:ch.text,timestamp:[(Number(ts[0])||0)+s0,(Number(ts[1])||0)+s0]};
-    });
-    var built=scenesFromChunks(adjusted),words=[];
-    built.forEach(function(part){(part.words||[]).forEach(function(w){words.push(w)})});
+    var words=(data.words||[]).map(function(w){return {w:w.word,s:(Number(w.start)||0)+s0,e:(Number(w.end)||0)+s0,estimated:false}});
     S.scenes[i].text=(data.text||"").trim()||S.scenes[i].text;
     if(words.length)S.scenes[i].words=words;else delete S.scenes[i].words;
     renderScenes();drawPreview();playUi("success");
