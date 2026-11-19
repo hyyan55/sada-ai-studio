@@ -1174,7 +1174,7 @@ function geoBackground(x,W,H,t,amp,st){
   /* black partial geometric shapes (#) at corners, softened with shadow blur */
   function hash(px,py,size,rot,a){
     x.save();x.translate(px,py);x.rotate(rot);
-    x.font="900 "+size+"px "+fontFamily+", sans-serif";x.textAlign="center";x.textBaseline="middle";
+    x.font="900 "+size+"px Cairo, sans-serif";x.textAlign="center";x.textBaseline="middle";
     x.shadowColor="rgba(14,14,18,"+a+")";x.shadowBlur=size*0.18;
     x.fillStyle="rgba(14,14,18,"+a+")";x.fillText("#",0,0);x.restore();
   }
@@ -1185,7 +1185,7 @@ function geoBackground(x,W,H,t,amp,st){
   x.fillStyle="rgba(20,20,26,0.62)";
   while(cxp<W*0.935){var bw3=(0.8+R()*2.6)*u;if(R()>0.32)x.fillRect(cxp,by,bw3,bh);cxp+=bw3+(0.8+R()*2.2)*u}
   /* quiet technical detail, top-left */
-  x.font="600 "+Math.max(9,Math.round(u*10))+"px "+fontFamily+", sans-serif";x.fillStyle="rgba(25,25,32,0.38)";x.textAlign="left";x.textBaseline="middle";
+  x.font="600 "+Math.max(9,Math.round(u*10))+"px Cairo, sans-serif";x.fillStyle="rgba(25,25,32,0.38)";x.textAlign="left";x.textBaseline="middle";
   x.fillText("SADA • 9:16",W*0.05,H*0.026);
 }
 
@@ -1200,7 +1200,8 @@ function drawCaptions(x,W,H,sc,t,st,alpha,idx){
   var durS=Math.max(0.1,sc.end-sc.start);
   var local=(t-sc.start)/durS;if(local<0)local=0;if(local>1)local=1;
   var mode=st.capMode||"smart";
-  var ink=st.template==="cinema"||st.template==="neon"?"#F7F3EA":st.template==="kinetic"?"#171923":st.template==="editorial"?"#28231F":ink;
+  var ink=st.template==="cinema"||st.template==="neon"?"#F7F3EA":st.template==="kinetic"?"#171923":st.template==="editorial"?"#28231F":"#452C8C";
+  var fontFamily=st.template==="cinema"?"IBM Plex Sans Arabic":st.template==="editorial"?"Noto Naskh Arabic":st.template==="kinetic"?"Changa":"Cairo";
   if(st.template==="geoWords")mode="word";
   if(st.template==="geoCalm")mode="sentence";
   var hasWords=!!(sc.words&&sc.words.length);
